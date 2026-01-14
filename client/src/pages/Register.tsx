@@ -1,29 +1,91 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Navbar } from "@/components/Navbar";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
-import { APP_LOGO } from "@/const";
+
+type FormErrors = {
+  name?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+};
 
 export default function Register() {
+  const { language, isRTL } = useLanguage();
   const [, setLocation] = useLocation();
   const { login } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [phone, setPhone] = useState("");
-  const [city, setCity] = useState("");
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  const content = {
+    ar: {
+      title: "إنشاء حساب",
+      subtitle: "انضم إلى مرحال وابدأ رحلتك",
+      nameLabel: "الاسم الكامل",
+      namePlaceholder: "أدخل اسمك الكامل",
+      emailLabel: "البريد الإلكتروني",
+      emailPlaceholder: "example@email.com",
+      passwordLabel: "كلمة المرور",
+      passwordPlaceholder: "6 أحرف على الأقل",
+      confirmPasswordLabel: "تأكيد كلمة المرور",
+      confirmPasswordPlaceholder: "أعد إدخال كلمة المرور",
+      submitBtn: "إنشاء الحساب",
+      loadingBtn: "جاري إنشاء الحساب...",
+      hasAccount: "لديك حساب؟",
+      signIn: "تسجيل الدخول",
+      errors: {
+        nameRequired: "الاسم مطلوب",
+        emailRequired: "البريد الإلكتروني مطلوب",
+        emailInvalid: "صيغة البريد الإلكتروني غير صحيحة",
+        passwordRequired: "كلمة المرور مطلوبة",
+        passwordMin: "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
+        confirmPasswordRequired: "تأكيد كلمة المرور مطلوب",
+        passwordMismatch: "كلمات المرور غير متطابقة",
+      },
+      footer: "© 2026 مرحال. جميع الحقوق محفوظة.",
+    },
+    en: {
+      title: "Create Account",
+      subtitle: "Join Merhaal and start your journey",
+      nameLabel: "Full Name",
+      namePlaceholder: "Enter your full name",
+      emailLabel: "Email",
+      emailPlaceholder: "example@email.com",
+      passwordLabel: "Password",
+      passwordPlaceholder: "At least 6 characters",
+      confirmPasswordLabel: "Confirm Password",
+      confirmPasswordPlaceholder: "Re-enter your password",
+      submitBtn: "Create Account",
+      loadingBtn: "Creating account...",
+      hasAccount: "Already have an account?",
+      signIn: "Sign In",
+      errors: {
+        nameRequired: "Name is required",
+        emailRequired: "Email is required",
+        emailInvalid: "Invalid email format",
+        passwordRequired: "Password is required",
+        passwordMin: "Password must be at least 6 characters",
+        confirmPasswordRequired: "Please confirm your password",
+        passwordMismatch: "Passwords do not match",
+      },
+      footer: "© 2026 Merhaal. All rights reserved.",
+    },
+  };
+
+  const t = content[language];
 
   const registerMutation = trpc.auth.register.useMutation({
     onSuccess: (data) => {
       login(data.token);
-      toast.success("تم إنشاء الحساب بنجاح!");
+      toast.success(language === "ar" ? "تم إنشاء الحساب بنجاح!" : "Account created successfully!");
       setLocation("/dashboard");
     },
     onError: (error) => {
@@ -31,154 +93,191 @@ export default function Register() {
     },
   });
 
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validate = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    if (!name.trim()) {
+      newErrors.name = t.errors.nameRequired;
+    }
+
+    if (!email.trim()) {
+      newErrors.email = t.errors.emailRequired;
+    } else if (!validateEmail(email)) {
+      newErrors.email = t.errors.emailInvalid;
+    }
+
+    if (!password.trim()) {
+      newErrors.password = t.errors.passwordRequired;
+    } else if (password.length < 6) {
+      newErrors.password = t.errors.passwordMin;
+    }
+
+    if (!confirmPassword.trim()) {
+      newErrors.confirmPassword = t.errors.confirmPasswordRequired;
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = t.errors.passwordMismatch;
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validate()) return;
+    registerMutation.mutate({ name, email, password });
+  };
 
-    if (password !== confirmPassword) {
-      toast.error("كلمات المرور غير متطابقة");
-      return;
+  const handleFieldChange = (field: keyof FormErrors, value: string) => {
+    if (field === "name") setName(value);
+    if (field === "email") setEmail(value);
+    if (field === "password") setPassword(value);
+    if (field === "confirmPassword") setConfirmPassword(value);
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
-
-    if (password.length < 6) {
-      toast.error("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
-      return;
-    }
-
-    registerMutation.mutate({
-      name,
-      email,
-      password,
-      phone: phone || undefined,
-      city: city || undefined,
-    });
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 via-blue-600 to-green-500 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <img src={APP_LOGO} alt="مرحال" className="h-16" />
+    <div
+      className={`min-h-screen bg-background flex flex-col ${isRTL ? "rtl" : "ltr"}`}
+      dir={isRTL ? "rtl" : "ltr"}
+    >
+      <Navbar />
+
+      <section className="flex-1 flex items-center justify-center py-12 px-4">
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-8">
+            <h1 className="text-2xl md:text-3xl font-semibold text-foreground mb-2">
+              {t.title}
+            </h1>
+            <p className="text-sm text-muted-foreground">{t.subtitle}</p>
           </div>
-          <CardTitle className="text-2xl">إنشاء حساب جديد</CardTitle>
-          <CardDescription>املأ البيانات التالية لإنشاء حسابك</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">الاسم *</Label>
-              <Input
-                id="name"
+
+          <form
+            onSubmit={handleSubmit}
+            className="bg-card rounded-2xl border border-border p-6 space-y-5"
+            noValidate
+          >
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                {t.nameLabel}
+              </label>
+              <input
                 type="text"
-                placeholder="أدخل اسمك"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
+                onChange={(e) => handleFieldChange("name", e.target.value)}
+                placeholder={t.namePlaceholder}
+                className={`w-full h-12 px-4 rounded-xl border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors ${
+                  errors.name ? "border-red-500" : "border-border"
+                }`}
               />
+              {errors.name && (
+                <p className="text-sm text-red-500 mt-1.5">{errors.name}</p>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">البريد الإلكتروني *</Label>
-              <Input
-                id="email"
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                {t.emailLabel}
+              </label>
+              <input
                 type="email"
-                placeholder="example@email.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                onChange={(e) => handleFieldChange("email", e.target.value)}
+                placeholder={t.emailPlaceholder}
                 dir="ltr"
+                className={`w-full h-12 px-4 rounded-xl border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors ${
+                  errors.email ? "border-red-500" : "border-border"
+                } ${isRTL ? "text-right" : "text-left"}`}
               />
+              {errors.email && (
+                <p className="text-sm text-red-500 mt-1.5">{errors.email}</p>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">كلمة المرور * (6 أحرف على الأقل)</Label>
-              <Input
-                id="password"
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                {t.passwordLabel}
+              </label>
+              <input
                 type="password"
-                placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+                onChange={(e) => handleFieldChange("password", e.target.value)}
+                placeholder={t.passwordPlaceholder}
                 dir="ltr"
+                className={`w-full h-12 px-4 rounded-xl border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors ${
+                  errors.password ? "border-red-500" : "border-border"
+                } ${isRTL ? "text-right" : "text-left"}`}
               />
+              {errors.password && (
+                <p className="text-sm text-red-500 mt-1.5">{errors.password}</p>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">تأكيد كلمة المرور *</Label>
-              <Input
-                id="confirmPassword"
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                {t.confirmPasswordLabel}
+              </label>
+              <input
                 type="password"
-                placeholder="••••••••"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
+                onChange={(e) => handleFieldChange("confirmPassword", e.target.value)}
+                placeholder={t.confirmPasswordPlaceholder}
                 dir="ltr"
+                className={`w-full h-12 px-4 rounded-xl border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors ${
+                  errors.confirmPassword ? "border-red-500" : "border-border"
+                } ${isRTL ? "text-right" : "text-left"}`}
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone">رقم الجوال (اختياري)</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="05xxxxxxxx"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                dir="ltr"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="city">المدينة (اختياري)</Label>
-              <Input
-                id="city"
-                type="text"
-                placeholder="الرياض"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-              />
+              {errors.confirmPassword && (
+                <p className="text-sm text-red-500 mt-1.5">{errors.confirmPassword}</p>
+              )}
             </div>
 
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-green-700 to-green-600 hover:from-purple-700 hover:to-blue-700"
+              className="w-full h-12 rounded-full text-base font-medium"
               disabled={registerMutation.isPending}
             >
               {registerMutation.isPending ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  جاري إنشاء الحساب...
+                  <Loader2 className="w-4 h-4 me-2 animate-spin" />
+                  {t.loadingBtn}
                 </>
               ) : (
-                "إنشاء الحساب"
+                t.submitBtn
               )}
             </Button>
 
-            <div className="text-center text-sm">
-              <span className="text-gray-600">لديك حساب بالفعل؟ </span>
-              <Button
+            <div className="text-center pt-2">
+              <span className="text-sm text-muted-foreground">
+                {t.hasAccount}{" "}
+              </span>
+              <button
                 type="button"
-                variant="link"
-                className="p-0 h-auto"
                 onClick={() => setLocation("/login")}
+                className="text-sm text-primary font-medium hover:underline"
               >
-                تسجيل الدخول
-              </Button>
-            </div>
-
-            <div className="text-center">
-              <Button
-                type="button"
-                variant="link"
-                className="text-sm"
-                onClick={() => setLocation("/")}
-              >
-                العودة للصفحة الرئيسية
-              </Button>
+                {t.signIn}
+              </button>
             </div>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
+
+      <footer
+        className="bg-secondary/50 py-8"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 2rem)" }}
+      >
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-xs text-muted-foreground/70">{t.footer}</p>
+        </div>
+      </footer>
     </div>
   );
 }
