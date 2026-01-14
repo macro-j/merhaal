@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { MapPin, Star, Search } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { MapPin, Star, Search, Lock, X } from "lucide-react";
 import { useState } from "react";
+import { useLocation } from "wouter";
 
 const tourGuides = [
   {
@@ -55,9 +57,16 @@ const tourGuides = [
   },
 ];
 
+type ModalType = "login" | "upgrade" | null;
+
 export default function Guides() {
   const { language, isRTL } = useLanguage();
+  const { isAuthenticated, user } = useAuth();
+  const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
+  const [modalType, setModalType] = useState<ModalType>(null);
+
+  const isPro = isAuthenticated && user?.tier === "professional";
 
   const content = {
     ar: {
@@ -65,18 +74,72 @@ export default function Guides() {
       heroSubtitle: "مرشدون محترفون يرافقونك في رحلتك",
       searchPlaceholder: "ابحث عن مرشد...",
       viewProfile: "عرض الملف",
+      proBadge: "Pro",
       footer: "© 2025 مرحال. جميع الحقوق محفوظة.",
+      loginModal: {
+        title: "سجّل دخولك",
+        subtitle: "سجّل دخولك للوصول إلى المرشدين",
+        primaryBtn: "تسجيل الدخول",
+        secondaryBtn: "إلغاء",
+      },
+      upgradeModal: {
+        title: "ترقية للباقة الاحترافية",
+        subtitle: "المرشدون متاحون لمشتركي Pro فقط",
+        primaryBtn: "عرض الباقات",
+        secondaryBtn: "لاحقاً",
+      },
     },
     en: {
       heroTitle: "Guides",
       heroSubtitle: "Professional guides to accompany your journey",
       searchPlaceholder: "Search for a guide...",
       viewProfile: "View Profile",
+      proBadge: "Pro",
       footer: "© 2025 Merhaal. All rights reserved.",
+      loginModal: {
+        title: "Sign In Required",
+        subtitle: "Sign in to access tour guides",
+        primaryBtn: "Sign In",
+        secondaryBtn: "Cancel",
+      },
+      upgradeModal: {
+        title: "Upgrade to Pro",
+        subtitle: "Guides are available for Pro subscribers only",
+        primaryBtn: "View Plans",
+        secondaryBtn: "Later",
+      },
     },
   };
 
   const t = content[language];
+
+  const handleViewProfile = () => {
+    if (!isAuthenticated) {
+      setModalType("login");
+      return;
+    }
+    if (!isPro) {
+      setModalType("upgrade");
+      return;
+    }
+    // Pro user - allow access (for now just close)
+    setModalType(null);
+  };
+
+  const handleModalPrimary = () => {
+    if (modalType === "login") {
+      setLocation("/login");
+    } else if (modalType === "upgrade") {
+      setLocation("/packages");
+    }
+    setModalType(null);
+  };
+
+  const handleModalClose = () => {
+    setModalType(null);
+  };
+
+  const modalContent = modalType === "login" ? t.loginModal : t.upgradeModal;
 
   return (
     <div
@@ -122,8 +185,15 @@ export default function Guides() {
             {tourGuides.map((guide) => (
               <div
                 key={guide.id}
-                className="bg-card rounded-2xl border border-border p-5 flex flex-col items-center text-center transition-shadow hover:shadow-md"
+                className="relative bg-card rounded-2xl border border-border p-5 flex flex-col items-center text-center transition-shadow hover:shadow-md"
               >
+                {!isPro && (
+                  <div className="absolute top-3 end-3 flex items-center gap-1 bg-muted/80 text-muted-foreground text-xs font-medium px-2 py-1 rounded-full">
+                    <Lock className="w-3 h-3" />
+                    <span>{t.proBadge}</span>
+                  </div>
+                )}
+
                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                   <span className="text-2xl font-semibold text-primary">
                     {guide.name.charAt(0)}
@@ -147,6 +217,7 @@ export default function Guides() {
                 <Button
                   variant="outline"
                   className="w-full h-12 rounded-full text-sm font-medium"
+                  onClick={handleViewProfile}
                 >
                   {t.viewProfile}
                 </Button>
@@ -164,6 +235,56 @@ export default function Guides() {
           <p className="text-xs text-muted-foreground/70">{t.footer}</p>
         </div>
       </footer>
+
+      {modalType && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          onClick={handleModalClose}
+        >
+          <div
+            className="bg-card rounded-2xl p-6 w-full max-w-sm shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-end mb-2">
+              <button
+                onClick={handleModalClose}
+                className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:bg-muted transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <Lock className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold text-foreground mb-2">
+                {modalContent.title}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {modalContent.subtitle}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <Button
+                className="w-full h-12 rounded-full"
+                onClick={handleModalPrimary}
+              >
+                {modalContent.primaryBtn}
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full h-12 rounded-full"
+                onClick={handleModalClose}
+              >
+                {modalContent.secondaryBtn}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
