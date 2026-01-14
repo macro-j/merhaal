@@ -7,11 +7,11 @@ export default function About() {
 
   const content = {
     ar: {
-      heroTitle: "مرحال",
+      heroTitle: "عن مرحال",
       heroSubtitle: "رفيقك في اكتشاف السعودية",
       ideaTitle: "الفكرة",
       ideaText: "تخطيط الرحلات يجب أن يكون سهلاً. نجمع لك الوجهات والأنشطة والجداول في مكان واحد.",
-      howTitle: "كيف نعمل",
+      howTitle: "كيف يعمل مرحال",
       steps: [
         { num: "١", title: "اختر وجهتك", desc: "تصفح المدن واختر ما يناسبك" },
         { num: "٢", title: "خصص رحلتك", desc: "حدد الميزانية والاهتمامات" },

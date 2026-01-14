@@ -23,7 +23,7 @@ const navLinks: NavLink[] = [
   { href: "/", labelAr: "الرئيسية", labelEn: "Home" },
   { href: "/packages", labelAr: "الباقات", labelEn: "Plans" },
   { href: "/guides", labelAr: "المرشدون", labelEn: "Guides" },
-  { href: "/about", labelAr: "حول", labelEn: "About" },
+  { href: "/about", labelAr: "عن مرحال", labelEn: "About" },
   { href: "/support", labelAr: "الدعم", labelEn: "Help" },
 ];
 
@@ -119,7 +119,7 @@ export function Navbar() {
                     size="sm"
                     onClick={() => (window.location.href = "/register")}
                   >
-                    {language === "ar" ? "سجّل" : "Get Started"}
+                    {language === "ar" ? "تسجيل الدخول" : "Get Started"}
                   </Button>
                 </>
               )}
@@ -204,7 +204,7 @@ export function Navbar() {
                   className="w-full h-12"
                   onClick={() => handleNavClick("/register")}
                 >
-                  {language === "ar" ? "سجّل" : "Get Started"}
+                  {language === "ar" ? "تسجيل الدخول" : "Get Started"}
                 </Button>
                 <Button
                   variant="outline"
