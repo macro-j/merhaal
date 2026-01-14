@@ -59,46 +59,46 @@ export default function Home() {
 
   const features = [
     {
-      icon: <Sparkles className="w-6 h-6 md:w-8 md:h-8" />,
-      title: 'محرك توليد ذكي',
-      titleEn: 'Smart Generation Engine',
-      description: 'توليد جداول رحلات مخصصة بناءً على تفضيلاتك',
-      descriptionEn: 'Generate custom trip schedules based on your preferences'
+      icon: <Sparkles className="w-5 h-5" />,
+      title: 'تخطيط ذكي',
+      titleEn: 'Smart Planning',
+      description: 'جداول رحلات مخصصة لتفضيلاتك',
+      descriptionEn: 'Custom trip schedules for your preferences'
     },
     {
-      icon: <Settings className="w-6 h-6 md:w-8 md:h-8" />,
-      title: 'التخصيص الكامل',
-      titleEn: 'Full Customization',
-      description: 'اختر الوجهات والميزانية والاهتمامات المناسبة لك',
-      descriptionEn: 'Choose destinations, budget and interests that suit you'
+      icon: <Settings className="w-5 h-5" />,
+      title: 'تخصيص كامل',
+      titleEn: 'Full Control',
+      description: 'اختر الوجهات والميزانية والاهتمامات',
+      descriptionEn: 'Choose destinations, budget and interests'
     },
     {
-      icon: <Calendar className="w-6 h-6 md:w-8 md:h-8" />,
-      title: 'حجز فوري',
-      titleEn: 'Instant Booking',
-      description: 'احجز الأنشطة والفنادق مباشرة من التطبيق',
-      descriptionEn: 'Book activities and hotels directly through the app'
+      icon: <Calendar className="w-5 h-5" />,
+      title: 'حجز مباشر',
+      titleEn: 'Direct Booking',
+      description: 'احجز الأنشطة والفنادق بسهولة',
+      descriptionEn: 'Book activities and hotels easily'
     },
     {
-      icon: <Globe className="w-6 h-6 md:w-8 md:h-8" />,
-      title: 'دعم متعدد اللغات',
-      titleEn: 'Multi-language Support',
-      description: 'متاح بالعربية والإنجليزية لراحتك',
-      descriptionEn: 'Available in Arabic and English for your convenience'
+      icon: <Globe className="w-5 h-5" />,
+      title: 'دعم اللغات',
+      titleEn: 'Multi-language',
+      description: 'متاح بالعربية والإنجليزية',
+      descriptionEn: 'Available in Arabic and English'
     },
     {
-      icon: <Users className="w-6 h-6 md:w-8 md:h-8" />,
-      title: 'مرشدون معتمدون',
-      titleEn: 'Certified Guides',
-      description: 'احجز مرشدين سياحيين محترفين لمرافقتك',
-      descriptionEn: 'Book professional tour guides to accompany you'
+      icon: <Users className="w-5 h-5" />,
+      title: 'مرشدون محترفون',
+      titleEn: 'Pro Guides',
+      description: 'مرشدون سياحيون معتمدون',
+      descriptionEn: 'Certified tour guides'
     },
     {
-      icon: <Share2 className="w-6 h-6 md:w-8 md:h-8" />,
-      title: 'مشاركة وتصدير',
-      titleEn: 'Share & Export',
-      description: 'شارك خططك أو صدرها كملف PDF',
-      descriptionEn: 'Share your plans or export them as PDF'
+      icon: <Share2 className="w-5 h-5" />,
+      title: 'مشاركة سهلة',
+      titleEn: 'Easy Sharing',
+      description: 'شارك خططك أو صدرها PDF',
+      descriptionEn: 'Share plans or export as PDF'
     }
   ];
 
@@ -220,25 +220,30 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="features" className="py-12 md:py-20 bg-white dark:bg-gray-950">
+      <section id="features" className="py-20 md:py-28 bg-background">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl md:text-4xl font-bold text-center mb-8 md:mb-16 text-primary">
-            {t.featuresTitle}
-          </h2>
+          <div className="text-center mb-14 md:mb-20">
+            <h2 className="text-2xl md:text-4xl font-semibold text-foreground mb-3">
+              {t.featuresTitle}
+            </h2>
+            <p className="text-base text-muted-foreground max-w-md mx-auto">
+              {language === 'ar' ? 'كل ما تحتاجه لتخطيط رحلتك المثالية' : 'Everything you need to plan your perfect trip'}
+            </p>
+          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto">
             {features.map((feature, index) => (
               <div 
                 key={index} 
-                className="p-5 md:p-8 rounded-xl md:rounded-2xl bg-secondary/30 dark:bg-secondary/10 hover:shadow-lg transition-all duration-300"
+                className="p-6 md:p-8"
               >
-                <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-primary flex items-center justify-center text-white mb-4 md:mb-6 shadow-md">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-5">
                   {feature.icon}
                 </div>
-                <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3 text-gray-900 dark:text-white">
+                <h3 className="text-base md:text-lg font-semibold text-foreground mb-2">
                   {language === 'ar' ? feature.title : feature.titleEn}
                 </h3>
-                <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
+                <p className="text-sm text-muted-foreground leading-relaxed">
                   {language === 'ar' ? feature.description : feature.descriptionEn}
                 </p>
               </div>
