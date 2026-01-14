@@ -21,10 +21,10 @@ interface NavLink {
 
 const navLinks: NavLink[] = [
   { href: "/", labelAr: "الرئيسية", labelEn: "Home" },
-  { href: "/packages", labelAr: "الباقات", labelEn: "Packages" },
+  { href: "/packages", labelAr: "الباقات", labelEn: "Plans" },
   { href: "/guides", labelAr: "المرشدون", labelEn: "Guides" },
-  { href: "/about", labelAr: "من نحن", labelEn: "About" },
-  { href: "/support", labelAr: "الدعم", labelEn: "Support" },
+  { href: "/about", labelAr: "عن مرحال", labelEn: "About" },
+  { href: "/support", labelAr: "المساعدة", labelEn: "Help" },
 ];
 
 export function Navbar() {
@@ -104,7 +104,7 @@ export function Navbar() {
                   size="sm"
                   onClick={() => (window.location.href = "/dashboard")}
                 >
-                  {language === "ar" ? "لوحة التحكم" : "Dashboard"}
+                  {language === "ar" ? "حسابي" : "My Account"}
                 </Button>
               ) : (
                 <>
@@ -113,13 +113,13 @@ export function Navbar() {
                     size="sm"
                     onClick={() => (window.location.href = "/login")}
                   >
-                    {language === "ar" ? "دخول" : "Login"}
+                    {language === "ar" ? "دخول" : "Sign In"}
                   </Button>
                   <Button
                     size="sm"
                     onClick={() => (window.location.href = "/register")}
                   >
-                    {language === "ar" ? "حساب جديد" : "Sign Up"}
+                    {language === "ar" ? "ابدأ الآن" : "Get Started"}
                   </Button>
                 </>
               )}
@@ -196,7 +196,7 @@ export function Navbar() {
                 className="w-full h-12"
                 onClick={() => handleNavClick("/dashboard")}
               >
-                {language === "ar" ? "لوحة التحكم" : "Dashboard"}
+                {language === "ar" ? "حسابي" : "My Account"}
               </Button>
             ) : (
               <div className="flex flex-col gap-2">
@@ -204,14 +204,14 @@ export function Navbar() {
                   className="w-full h-12"
                   onClick={() => handleNavClick("/register")}
                 >
-                  {language === "ar" ? "إنشاء حساب" : "Sign Up"}
+                  {language === "ar" ? "ابدأ الآن" : "Get Started"}
                 </Button>
                 <Button
                   variant="outline"
                   className="w-full h-12"
                   onClick={() => handleNavClick("/login")}
                 >
-                  {language === "ar" ? "تسجيل الدخول" : "Login"}
+                  {language === "ar" ? "تسجيل الدخول" : "Sign In"}
                 </Button>
               </div>
             )}

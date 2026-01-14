@@ -102,34 +102,34 @@ export default function Home() {
   const content = {
     ar: {
       hero: {
-        title: 'رحلتك تبدأ هنا',
-        subtitle: 'خطط رحلتك داخل السعودية بذكاء',
-        cta: 'ابدأ الآن'
+        title: 'اكتشف السعودية',
+        subtitle: 'رحلات مخصصة لك. خطط بذكاء.',
+        cta: 'ابدأ التخطيط'
       },
-      destinationsTitle: 'اختر وجهتك',
-      destinationsSubtitle: 'اكتشف أجمل المدن السعودية',
-      explore: 'استكشف',
-      featuresTitle: 'مميزات مرحال',
+      destinationsTitle: 'وجهات مميزة',
+      destinationsSubtitle: 'أجمل المدن في انتظارك',
+      explore: 'اكتشف',
+      featuresTitle: 'لماذا مرحال؟',
       ctaSection: {
-        title: 'جاهز لبدء رحلتك؟',
-        subtitle: 'ابدأ التخطيط لرحلتك القادمة الآن',
+        title: 'جاهز للانطلاق؟',
+        subtitle: 'ابدأ رحلتك القادمة الآن',
         button: 'ابدأ مجاناً'
       },
       footer: '© 2026 مرحال. جميع الحقوق محفوظة.'
     },
     en: {
       hero: {
-        title: 'Your Journey Starts Here',
-        subtitle: 'Plan your trip in Saudi Arabia smartly',
-        cta: 'Start Now'
+        title: 'Discover Saudi Arabia',
+        subtitle: 'Trips made for you. Plan smart.',
+        cta: 'Start Planning'
       },
-      destinationsTitle: 'Choose Your Destination',
-      destinationsSubtitle: 'Discover the most beautiful Saudi cities',
+      destinationsTitle: 'Top Destinations',
+      destinationsSubtitle: 'Beautiful cities await you',
       explore: 'Explore',
-      featuresTitle: 'Merhaal Features',
+      featuresTitle: 'Why Merhaal?',
       ctaSection: {
-        title: 'Ready to Start?',
-        subtitle: 'Start planning your next trip now',
+        title: 'Ready to Go?',
+        subtitle: 'Start your next trip now',
         button: 'Start Free'
       },
       footer: '© 2026 Merhaal. All rights reserved.'
@@ -224,7 +224,7 @@ export default function Home() {
               {t.featuresTitle}
             </h2>
             <p className="text-base text-muted-foreground max-w-md mx-auto">
-              {language === 'ar' ? 'كل ما تحتاجه لتخطيط رحلتك المثالية' : 'Everything you need to plan your perfect trip'}
+              {language === 'ar' ? 'أدوات ذكية لرحلة مثالية' : 'Smart tools for your perfect trip'}
             </p>
           </div>
 
@@ -280,19 +280,19 @@ export default function Home() {
                 {language === 'ar' ? 'مرحال' : 'Merhaal'}
               </h3>
               <p className="text-sm text-muted-foreground">
-                {language === 'ar' ? 'خطط رحلتك بذكاء' : 'Plan your trip smartly'}
+                {language === 'ar' ? 'رحلتك تبدأ هنا' : 'Your journey starts here'}
               </p>
             </div>
 
             <nav className="flex flex-wrap justify-center gap-6 md:gap-8">
               <a href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                {language === 'ar' ? 'من نحن' : 'About'}
+                {language === 'ar' ? 'عن مرحال' : 'About'}
               </a>
               <a href="/packages" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                {language === 'ar' ? 'الباقات' : 'Packages'}
+                {language === 'ar' ? 'الباقات' : 'Plans'}
               </a>
               <a href="/support" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                {language === 'ar' ? 'الدعم' : 'Support'}
+                {language === 'ar' ? 'المساعدة' : 'Help'}
               </a>
             </nav>
 
