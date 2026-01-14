@@ -126,13 +126,13 @@ export default function Home() {
       destinationsTitle: 'Choose Your Destination',
       destinationsSubtitle: 'Discover the most beautiful Saudi cities',
       explore: 'Explore',
-      featuresTitle: 'Marhal Features',
+      featuresTitle: 'Merhaal Features',
       ctaSection: {
         title: 'Ready to Start?',
         subtitle: 'Start planning your next trip now',
         button: 'Start Free'
       },
-      footer: '© 2025 Marhal. All rights reserved.'
+      footer: '© 2025 Merhaal. All rights reserved.'
     }
   };
 
@@ -277,7 +277,7 @@ export default function Home() {
           <div className="flex flex-col items-center gap-8 md:gap-10">
             <div className="text-center">
               <h3 className="text-xl md:text-2xl font-semibold text-primary mb-1">
-                {language === 'ar' ? 'مرحال' : 'Marhal'}
+                {language === 'ar' ? 'مرحال' : 'Merhaal'}
               </h3>
               <p className="text-sm text-muted-foreground">
                 {language === 'ar' ? 'خطط رحلتك بذكاء' : 'Plan your trip smartly'}

@@ -177,7 +177,7 @@ export default function Packages() {
       >
         <div className="container mx-auto px-4 text-center">
           <p className="text-sm text-muted-foreground">
-            {language === 'ar' ? '© 2025 مرحال. جميع الحقوق محفوظة.' : '© 2025 Marhal. All rights reserved.'}
+            {language === 'ar' ? '© 2025 مرحال. جميع الحقوق محفوظة.' : '© 2025 Merhaal. All rights reserved.'}
           </p>
         </div>
       </footer>

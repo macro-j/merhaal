@@ -29,20 +29,20 @@ export default function About() {
       heroTitle: "About Us",
       heroSubtitle: "Helping you discover Saudi Arabia your way",
       ideaTitle: "Our Idea",
-      ideaText: "Marhal started from a simple idea: trip planning should be easy and enjoyable. We bring everything you need in one place — destinations, activities, and personalized schedules.",
-      howTitle: "How Marhal Works",
+      ideaText: "Merhaal started from a simple idea: trip planning should be easy and enjoyable. We bring everything you need in one place — destinations, activities, and personalized schedules.",
+      howTitle: "How Merhaal Works",
       steps: [
         { num: "1", title: "Choose your destination", desc: "Browse cities and pick what suits you" },
         { num: "2", title: "Customize your trip", desc: "Set budget, interests, and duration" },
         { num: "3", title: "Get your schedule", desc: "Receive a ready, detailed trip plan" },
       ],
-      whyTitle: "Why Marhal?",
+      whyTitle: "Why Merhaal?",
       values: [
         { icon: Sparkles, title: "Smart", desc: "Planning based on your personal preferences" },
         { icon: Map, title: "Comprehensive", desc: "All destinations and activities in one place" },
         { icon: Heart, title: "Simple", desc: "Clean interface and smooth experience" },
       ],
-      footer: "© 2025 Marhal. All rights reserved.",
+      footer: "© 2025 Merhaal. All rights reserved.",
     },
   };
 
