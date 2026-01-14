@@ -25,6 +25,16 @@ export default function Home() {
       description: 'عاصمة تجمع بين التراث والحداثة مع أسواق عريقة ومتاحف وواجهات حديثة',
       descriptionEn: 'A capital that combines heritage and modernity with traditional markets, museums and modern facades',
       image: '/images/cities/riyadh-hero.jpg'
+    },
+    {
+      id: 'جدة',
+      name: 'جدة',
+      nameEn: 'Jeddah',
+      subtitle: 'عروس البحر الأحمر',
+      subtitleEn: 'Bride of the Red Sea',
+      description: 'مدينة ساحلية بموروث عريق مع كورنيش ساحر وتراث إسلامي',
+      descriptionEn: 'A coastal city with rich heritage, charming corniche and Islamic heritage',
+      image: '/images/cities/jeddah-hero.jpg'
     }
   ];
 
