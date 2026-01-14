@@ -3,16 +3,16 @@ import { Navbar } from "@/components/Navbar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { toast } from "sonner";
 
 type FormErrors = {
   name?: string;
   email?: string;
   password?: string;
   confirmPassword?: string;
+  general?: string;
 };
 
 export default function Register() {
@@ -85,11 +85,10 @@ export default function Register() {
   const registerMutation = trpc.auth.register.useMutation({
     onSuccess: (data) => {
       login(data.token);
-      toast.success(language === "ar" ? "تم إنشاء الحساب بنجاح!" : "Account created successfully!");
       setLocation("/dashboard");
     },
     onError: (error) => {
-      toast.error(error.message);
+      setErrors((prev) => ({ ...prev, general: error.message }));
     },
   });
 
@@ -129,6 +128,7 @@ export default function Register() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
     if (!validate()) return;
     registerMutation.mutate({ name, email, password });
   };
@@ -164,6 +164,12 @@ export default function Register() {
             className="bg-card rounded-2xl border border-border p-6 space-y-5"
             noValidate
           >
+            {errors.general && (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                <p className="text-sm text-red-600 dark:text-red-400">{errors.general}</p>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
                 {t.nameLabel}

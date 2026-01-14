@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Send, CheckCircle } from "lucide-react";
+import { Send, CheckCircle, Loader2 } from "lucide-react";
 import { useState } from "react";
 
 type FormData = {
@@ -20,6 +20,7 @@ type FormErrors = {
 
 export default function Support() {
   const { language, isRTL } = useLanguage();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     name: "",
@@ -48,6 +49,7 @@ export default function Support() {
       messageLabel: "الرسالة",
       messagePlaceholder: "اكتب رسالتك هنا...",
       submitBtn: "إرسال",
+      loadingBtn: "جارٍ الإرسال...",
       successTitle: "تم الإرسال",
       successMessage: "تم استلام رسالتك. بنرجع لك قريبًا.",
       sendAnother: "إرسال رسالة أخرى",
@@ -78,6 +80,7 @@ export default function Support() {
       messageLabel: "Message",
       messagePlaceholder: "Write your message here...",
       submitBtn: "Send",
+      loadingBtn: "Sending...",
       successTitle: "Sent Successfully",
       successMessage: "We received your message. We'll get back to you soon.",
       sendAnother: "Send Another Message",
@@ -129,8 +132,13 @@ export default function Support() {
 
     if (!validate()) return;
 
-    console.log("Form submitted:", formData);
-    setIsSubmitted(true);
+    setIsSubmitting(true);
+    
+    setTimeout(() => {
+      console.log("Form submitted:", formData);
+      setIsSubmitting(false);
+      setIsSubmitted(true);
+    }, 1000);
   };
 
   const handleReset = () => {
@@ -286,9 +294,19 @@ export default function Support() {
                 <Button
                   type="submit"
                   className="w-full h-12 rounded-full text-base font-medium gap-2"
+                  disabled={isSubmitting}
                 >
-                  <Send className="w-4 h-4" />
-                  {t.submitBtn}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {t.loadingBtn}
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      {t.submitBtn}
+                    </>
+                  )}
                 </Button>
               </form>
             )}
