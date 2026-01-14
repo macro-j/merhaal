@@ -176,49 +176,45 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="destinations" className="py-12 md:py-20 bg-gray-50 dark:bg-gray-900">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-8 md:mb-12">
-            <h2 className="text-2xl md:text-4xl font-bold mb-3 md:mb-4 text-primary">
+      <section id="destinations" className="py-16 md:py-24 bg-secondary/30">
+        <div className="container mx-auto">
+          <div className="text-center mb-10 md:mb-14 px-4">
+            <h2 className="text-2xl md:text-4xl font-semibold mb-2 md:mb-3 text-foreground">
               {t.destinationsTitle}
             </h2>
-            <p className="text-base md:text-xl text-gray-600 dark:text-gray-400">
+            <p className="text-base md:text-lg text-muted-foreground">
               {t.destinationsSubtitle}
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+          <div className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 px-4 hide-scrollbar md:grid md:grid-cols-4 md:gap-6 md:overflow-visible md:px-4">
             {destinations.map((dest, index) => (
-              <div 
-                key={index} 
-                className="group relative overflow-hidden rounded-xl md:rounded-2xl shadow-md hover:shadow-xl transition-all duration-300"
+              <button 
+                key={index}
+                onClick={() => setSelectedCity(dest.id)}
+                className="group relative flex-shrink-0 w-[280px] md:w-auto snap-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-2xl"
               >
-                <div className="aspect-[3/4] relative">
+                <div className="aspect-[4/5] relative overflow-hidden rounded-2xl">
                   <img 
                     src={dest.image} 
                     alt={language === 'ar' ? dest.name : dest.nameEn}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500 ease-out"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
                   
-                  <div className="absolute bottom-0 left-0 right-0 p-3 md:p-6 text-white">
-                    <h3 className="text-lg md:text-2xl font-bold mb-1 md:mb-2">
+                  <div className="absolute bottom-0 left-0 right-0 p-5 md:p-6 text-white text-start">
+                    <h3 className="text-xl md:text-2xl font-semibold mb-1">
                       {language === 'ar' ? dest.name : dest.nameEn}
                     </h3>
-                    <p className="text-xs md:text-base text-gray-200 mb-2 md:mb-4 line-clamp-2">
+                    <p className="text-sm text-white/80 mb-4 leading-relaxed">
                       {language === 'ar' ? dest.subtitle : dest.subtitleEn}
                     </p>
-                    <Button 
-                      variant="secondary" 
-                      size="sm" 
-                      className="rounded-full text-xs md:text-sm h-8 md:h-9 px-3 md:px-4"
-                      onClick={() => setSelectedCity(dest.id)}
-                    >
+                    <span className="inline-flex items-center justify-center h-11 px-6 bg-white/95 text-primary font-medium text-sm rounded-full shadow-sm group-hover:bg-white transition-colors">
                       {t.explore}
-                    </Button>
+                    </span>
                   </div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>
