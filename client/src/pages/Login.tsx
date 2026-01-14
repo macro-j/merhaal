@@ -129,7 +129,7 @@ export default function Login() {
 
           <form
             onSubmit={handleSubmit}
-            className="bg-card rounded-2xl border border-border p-6 space-y-5"
+            className="bg-card rounded-2xl border border-border p-6 space-y-5 form-transition"
             noValidate
           >
             {errors.general && (
@@ -153,7 +153,7 @@ export default function Login() {
                 } ${isRTL ? "text-right" : "text-left"}`}
               />
               {errors.email && (
-                <p className="text-sm text-red-500 mt-1.5">{errors.email}</p>
+                <p className="text-sm text-red-500 mt-1.5 form-transition">{errors.email}</p>
               )}
             </div>
 
@@ -172,7 +172,7 @@ export default function Login() {
                 } ${isRTL ? "text-right" : "text-left"}`}
               />
               {errors.password && (
-                <p className="text-sm text-red-500 mt-1.5">{errors.password}</p>
+                <p className="text-sm text-red-500 mt-1.5 form-transition">{errors.password}</p>
               )}
             </div>
 

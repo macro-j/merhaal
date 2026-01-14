@@ -182,7 +182,7 @@ export default function Support() {
         <div className="container mx-auto px-4">
           <div className="max-w-md mx-auto">
             {isSubmitted ? (
-              <div className="bg-card rounded-2xl border border-border p-8 text-center">
+              <div className="bg-card rounded-2xl border border-border p-8 text-center form-transition">
                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-5">
                   <CheckCircle className="w-8 h-8 text-primary" />
                 </div>
@@ -203,7 +203,7 @@ export default function Support() {
             ) : (
               <form
                 onSubmit={handleSubmit}
-                className="bg-card rounded-2xl border border-border p-6 md:p-8 space-y-5"
+                className="bg-card rounded-2xl border border-border p-6 md:p-8 space-y-5 form-transition"
                 noValidate
               >
                 <div>

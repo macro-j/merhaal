@@ -185,7 +185,7 @@ export default function Guides() {
             {tourGuides.map((guide) => (
               <div
                 key={guide.id}
-                className="relative bg-card rounded-2xl border border-border p-5 flex flex-col items-center text-center transition-shadow hover:shadow-md"
+                className="relative bg-card rounded-2xl border border-border p-5 flex flex-col items-center text-center card-hover"
               >
                 {!isPro && (
                   <div className="absolute top-3 end-3 flex items-center gap-1 bg-muted/80 text-muted-foreground text-xs font-medium px-2 py-1 rounded-full">

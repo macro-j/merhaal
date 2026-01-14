@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
+import { useInView } from "@/hooks/useInView";
 import { Button } from "@/components/ui/button";
 import { CityDetailModal } from "@/components/CityDetailModal";
 import { Calendar, Settings, Sparkles, Globe, Users, Share2 } from "lucide-react";
@@ -10,6 +11,9 @@ export default function Home() {
   let { isAuthenticated } = useAuth();
   const { language, isRTL } = useLanguage();
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  
+  const { ref: destinationsRef, isInView: destinationsInView } = useInView();
+  const { ref: featuresRef, isInView: featuresInView } = useInView();
 
   const destinations = [
     {
@@ -173,8 +177,12 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="destinations" className="py-16 md:py-24 bg-secondary/30">
-        <div className="container mx-auto">
+      <section 
+        id="destinations" 
+        className="py-16 md:py-24 bg-secondary/30"
+        ref={destinationsRef as React.RefObject<HTMLElement>}
+      >
+        <div className={`container mx-auto transition-all duration-700 ease-out ${destinationsInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <div className="text-center mb-10 md:mb-14 px-4">
             <h2 className="text-2xl md:text-4xl font-semibold mb-2 md:mb-3 text-foreground">
               {t.destinationsTitle}
@@ -189,7 +197,7 @@ export default function Home() {
               <button 
                 key={index}
                 onClick={() => setSelectedCity(dest.id)}
-                className="group relative flex-shrink-0 w-[280px] md:w-auto snap-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-2xl"
+                className="group relative flex-shrink-0 w-[280px] md:w-auto snap-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-2xl card-hover"
               >
                 <div className="aspect-[4/5] relative overflow-hidden rounded-2xl">
                   <img 
@@ -217,8 +225,12 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="features" className="py-20 md:py-28 bg-background">
-        <div className="container mx-auto px-4">
+      <section 
+        id="features" 
+        className="py-20 md:py-28 bg-background"
+        ref={featuresRef as React.RefObject<HTMLElement>}
+      >
+        <div className={`container mx-auto px-4 transition-all duration-700 ease-out ${featuresInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <div className="text-center mb-14 md:mb-20">
             <h2 className="text-2xl md:text-4xl font-semibold text-foreground mb-3">
               {t.featuresTitle}

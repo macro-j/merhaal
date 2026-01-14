@@ -161,7 +161,7 @@ export default function Register() {
 
           <form
             onSubmit={handleSubmit}
-            className="bg-card rounded-2xl border border-border p-6 space-y-5"
+            className="bg-card rounded-2xl border border-border p-6 space-y-5 form-transition"
             noValidate
           >
             {errors.general && (
