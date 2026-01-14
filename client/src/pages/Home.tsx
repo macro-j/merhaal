@@ -249,26 +249,6 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="relative py-12 md:py-20 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/90 to-accent/80"></div>
-        
-        <div className="container mx-auto px-4 relative z-10 text-center">
-          <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-4 md:mb-6">
-            {t.ctaSection.title}
-          </h2>
-          <p className="text-base md:text-xl text-white/90 mb-6 md:mb-8">
-            {t.ctaSection.subtitle}
-          </p>
-          <Button 
-            size="lg" 
-            onClick={() => window.location.href = isAuthenticated ? '/plan-trip' : '/login'}
-            className="bg-white text-primary hover:bg-white/90 text-base md:text-lg px-8 py-6 h-14 md:h-16 rounded-full shadow-xl font-semibold"
-          >
-            {t.ctaSection.button}
-          </Button>
-        </div>
-      </section>
-
       <footer 
         className="bg-secondary/50 dark:bg-muted/30 py-8 md:py-10"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 2rem)" }}
