@@ -23,7 +23,7 @@ export default function About() {
         { icon: Map, title: "شامل", desc: "كل الوجهات والأنشطة في مكان واحد" },
         { icon: Heart, title: "سهل", desc: "واجهة بسيطة وتجربة سلسة" },
       ],
-      footer: "© 2025 مرحال. جميع الحقوق محفوظة.",
+      footer: "© 2026 مرحال. جميع الحقوق محفوظة.",
     },
     en: {
       heroTitle: "About Us",
@@ -42,7 +42,7 @@ export default function About() {
         { icon: Map, title: "Comprehensive", desc: "All destinations and activities in one place" },
         { icon: Heart, title: "Simple", desc: "Clean interface and smooth experience" },
       ],
-      footer: "© 2025 Merhaal. All rights reserved.",
+      footer: "© 2026 Merhaal. All rights reserved.",
     },
   };
 

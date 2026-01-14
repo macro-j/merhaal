@@ -58,7 +58,7 @@ export default function Support() {
         requestTypeRequired: "نوع الطلب مطلوب",
         messageRequired: "الرسالة مطلوبة",
       },
-      footer: "© 2025 مرحال. جميع الحقوق محفوظة.",
+      footer: "© 2026 مرحال. جميع الحقوق محفوظة.",
     },
     en: {
       heroTitle: "Support",
@@ -88,7 +88,7 @@ export default function Support() {
         requestTypeRequired: "Request type is required",
         messageRequired: "Message is required",
       },
-      footer: "© 2025 Merhaal. All rights reserved.",
+      footer: "© 2026 Merhaal. All rights reserved.",
     },
   };
 

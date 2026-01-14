@@ -115,7 +115,7 @@ export default function Home() {
         subtitle: 'ابدأ التخطيط لرحلتك القادمة الآن',
         button: 'ابدأ مجاناً'
       },
-      footer: '© 2025 مرحال. جميع الحقوق محفوظة.'
+      footer: '© 2026 مرحال. جميع الحقوق محفوظة.'
     },
     en: {
       hero: {
@@ -132,7 +132,7 @@ export default function Home() {
         subtitle: 'Start planning your next trip now',
         button: 'Start Free'
       },
-      footer: '© 2025 Merhaal. All rights reserved.'
+      footer: '© 2026 Merhaal. All rights reserved.'
     }
   };
 

@@ -75,7 +75,7 @@ export default function Guides() {
       searchPlaceholder: "ابحث عن مرشد...",
       viewProfile: "عرض الملف",
       proBadge: "Pro",
-      footer: "© 2025 مرحال. جميع الحقوق محفوظة.",
+      footer: "© 2026 مرحال. جميع الحقوق محفوظة.",
       loginModal: {
         title: "سجّل دخولك",
         subtitle: "سجّل دخولك للوصول إلى المرشدين",
@@ -95,7 +95,7 @@ export default function Guides() {
       searchPlaceholder: "Search for a guide...",
       viewProfile: "View Profile",
       proBadge: "Pro",
-      footer: "© 2025 Merhaal. All rights reserved.",
+      footer: "© 2026 Merhaal. All rights reserved.",
       loginModal: {
         title: "Sign In Required",
         subtitle: "Sign in to access tour guides",
