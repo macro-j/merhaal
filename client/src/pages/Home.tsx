@@ -4,15 +4,12 @@ import { CityDetailModal } from "@/components/CityDetailModal";
 import { Calendar, Settings, Sparkles, Globe, Users, Share2 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Home() {
   let { isAuthenticated } = useAuth();
-  const [language, setLanguage] = useState<'ar' | 'en'>('ar');
+  const { language, isRTL } = useLanguage();
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
-
-  const toggleLanguage = () => {
-    setLanguage(prev => prev === 'ar' ? 'en' : 'ar');
-  };
 
   const destinations = [
     {
@@ -143,10 +140,10 @@ export default function Home() {
 
   return (
     <div 
-      className={`min-h-screen ${language === 'ar' ? 'rtl' : 'ltr'}`} 
-      dir={language === 'ar' ? 'rtl' : 'ltr'}
+      className={`min-h-screen ${isRTL ? 'rtl' : 'ltr'}`} 
+      dir={isRTL ? 'rtl' : 'ltr'}
     >
-      <Navbar language={language} onToggleLanguage={toggleLanguage} />
+      <Navbar />
 
       <section 
         className="relative flex flex-col items-center justify-center overflow-hidden"

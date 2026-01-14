@@ -2,14 +2,10 @@ import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { toast } from "sonner";
 import { Navbar } from "@/components/Navbar";
-import { useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Packages() {
-  const [language, setLanguage] = useState<'ar' | 'en'>('ar');
-
-  const toggleLanguage = () => {
-    setLanguage(prev => prev === 'ar' ? 'en' : 'ar');
-  };
+  const { language, isRTL } = useLanguage();
 
   const handleSelectPackage = (packageName: string) => {
     toast.success(language === 'ar' 
@@ -89,10 +85,10 @@ export default function Packages() {
 
   return (
     <div 
-      className={`min-h-screen bg-background ${language === 'ar' ? 'rtl' : 'ltr'}`}
-      dir={language === 'ar' ? 'rtl' : 'ltr'}
+      className={`min-h-screen bg-background ${isRTL ? 'rtl' : 'ltr'}`}
+      dir={isRTL ? 'rtl' : 'ltr'}
     >
-      <Navbar language={language} onToggleLanguage={toggleLanguage} />
+      <Navbar />
 
       <section 
         className="pt-24 pb-16 md:pt-32 md:pb-24"

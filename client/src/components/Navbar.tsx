@@ -1,22 +1,17 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Menu, X, Moon, Sun } from "lucide-react";
+import { Menu, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetClose,
 } from "@/components/ui/sheet";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-
-interface NavbarProps {
-  language: 'ar' | 'en';
-  onToggleLanguage: () => void;
-}
 
 interface NavLink {
   href: string;
@@ -32,10 +27,11 @@ const navLinks: NavLink[] = [
   { href: "/support", labelAr: "الدعم", labelEn: "Support" },
 ];
 
-export function Navbar({ language, onToggleLanguage }: NavbarProps) {
+export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [location] = useLocation();
   const { theme, toggleTheme } = useTheme();
+  const { language, toggleLanguage } = useLanguage();
   const { isAuthenticated } = useAuth();
 
   const isActive = (href: string) => {
@@ -97,7 +93,7 @@ export function Navbar({ language, onToggleLanguage }: NavbarProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={onToggleLanguage}
+                onClick={toggleLanguage}
                 className="text-sm"
               >
                 {language === "ar" ? "English" : "العربية"}
@@ -176,7 +172,7 @@ export function Navbar({ language, onToggleLanguage }: NavbarProps) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={onToggleLanguage}
+                onClick={toggleLanguage}
                 className="flex-1 h-11"
               >
                 {language === "ar" ? "English" : "العربية"}
