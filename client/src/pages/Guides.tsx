@@ -1,211 +1,169 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { useAuth } from "@/hooks/useAuth";
-import { MapPin, Briefcase, Star } from "lucide-react";
-import { toast } from "sonner";
-import { APP_LOGO } from "@/const";
-import { useLocation } from "wouter";
+import { Navbar } from "@/components/Navbar";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { MapPin, Star, Search } from "lucide-react";
+import { useState } from "react";
 
 const tourGuides = [
   {
     id: 1,
-    name: 'أحمد المالكي',
-    nameEn: 'Ahmed Al-Malki',
-    specialty: 'تراث وثقافة',
-    specialtyEn: 'Heritage & Culture',
-    cities: 'الرياض، جدة، الطائف',
-    citiesEn: 'Riyadh, Jeddah, Taif',
+    name: "أحمد المالكي",
+    nameEn: "Ahmed Al-Malki",
+    city: "الرياض",
+    cityEn: "Riyadh",
     rating: 4.9,
-    price: 200,
-    experience: 8
   },
   {
     id: 2,
-    name: 'فاطمة العتيبي',
-    nameEn: 'Fatima Al-Otaibi',
-    specialty: 'مغامرات وطبيعة',
-    specialtyEn: 'Adventures & Nature',
-    cities: 'أبها، العلا، تبوك',
-    citiesEn: 'Abha, AlUla, Tabuk',
+    name: "فاطمة العتيبي",
+    nameEn: "Fatima Al-Otaibi",
+    city: "أبها",
+    cityEn: "Abha",
     rating: 4.8,
-    price: 180,
-    experience: 5
   },
   {
     id: 3,
-    name: 'سعيد القحطاني',
-    nameEn: 'Saeed Al-Qahtani',
-    specialty: 'رحلات عائلية',
-    specialtyEn: 'Family Trips',
-    cities: 'الرياض، جدة، الدمام',
-    citiesEn: 'Riyadh, Jeddah, Dammam',
+    name: "سعيد القحطاني",
+    nameEn: "Saeed Al-Qahtani",
+    city: "جدة",
+    cityEn: "Jeddah",
     rating: 5.0,
-    price: 250,
-    experience: 10
   },
   {
     id: 4,
-    name: 'نورة الشمري',
-    nameEn: 'Noura Al-Shammari',
-    specialty: 'سياحة دينية',
-    specialtyEn: 'Religious Tourism',
-    cities: 'مكة، المدينة',
-    citiesEn: 'Makkah, Madinah',
+    name: "نورة الشمري",
+    nameEn: "Noura Al-Shammari",
+    city: "المدينة",
+    cityEn: "Madinah",
     rating: 4.9,
-    price: 220,
-    experience: 7
   },
   {
     id: 5,
-    name: 'خالد الدوسري',
-    nameEn: 'Khalid Al-Dosari',
-    specialty: 'سياحة تاريخية',
-    specialtyEn: 'Historical Tourism',
-    cities: 'العلا، الدرعية، الأحساء',
-    citiesEn: 'AlUla, Diriyah, Al-Ahsa',
+    name: "خالد الدوسري",
+    nameEn: "Khalid Al-Dosari",
+    city: "العلا",
+    cityEn: "AlUla",
     rating: 4.7,
-    price: 190,
-    experience: 6
   },
   {
     id: 6,
-    name: 'مريم الغامدي',
-    nameEn: 'Maryam Al-Ghamdi',
-    specialty: 'سياحة بحرية',
-    specialtyEn: 'Marine Tourism',
-    cities: 'جدة، ينبع، الوجه',
-    citiesEn: 'Jeddah, Yanbu, Al-Wajh',
+    name: "مريم الغامدي",
+    nameEn: "Maryam Al-Ghamdi",
+    city: "ينبع",
+    cityEn: "Yanbu",
     rating: 4.8,
-    price: 200,
-    experience: 4
-  }
+  },
 ];
 
 export default function Guides() {
-  const { isAuthenticated, user } = useAuth();
-  const [, setLocation] = useLocation();
+  const { language, isRTL } = useLanguage();
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const handleBookGuide = (guideName: string) => {
-    if (!isAuthenticated) {
-      toast.error('يجب تسجيل الدخول أولاً');
-      setLocation('/login');
-      return;
-    }
-
-    if (user?.tier !== 'pro') {
-      toast.info('هذه الميزة متاحة للباقة الاحترافية فقط');
-      return;
-    }
-
-    toast.success(`تم إرسال طلب حجز المرشد ${guideName}. سيتم التواصل معك قريباً`);
+  const content = {
+    ar: {
+      heroTitle: "المرشدون",
+      heroSubtitle: "مرشدون محترفون يرافقونك في رحلتك",
+      searchPlaceholder: "ابحث عن مرشد...",
+      viewProfile: "عرض الملف",
+      footer: "© 2025 مرحال. جميع الحقوق محفوظة.",
+    },
+    en: {
+      heroTitle: "Guides",
+      heroSubtitle: "Professional guides to accompany your journey",
+      searchPlaceholder: "Search for a guide...",
+      viewProfile: "View Profile",
+      footer: "© 2025 Merhaal. All rights reserved.",
+    },
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <img src={APP_LOGO} alt="مرحال" className="h-10" />
-              <h1 className="text-xl font-bold">المرشدون السياحيون</h1>
-            </div>
-            <Button variant="outline" onClick={() => setLocation('/')}>
-              العودة للرئيسية
-            </Button>
-          </div>
-        </div>
-      </header>
+  const t = content[language];
 
-      {/* Content */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold mb-3">مرشدون سياحيون محترفون</h2>
-          <p className="text-gray-600 dark:text-gray-400">
-            احجز مرشدين معتمدين لمرافقتك في رحلتك
+  return (
+    <div
+      className={`min-h-screen bg-background ${isRTL ? "rtl" : "ltr"}`}
+      dir={isRTL ? "rtl" : "ltr"}
+    >
+      <Navbar />
+
+      <section
+        className="pt-24 pb-10 md:pt-32 md:pb-14 bg-gradient-to-b from-primary/5 to-transparent"
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 6rem)" }}
+      >
+        <div className="container mx-auto px-4 text-center">
+          <h1 className="text-3xl md:text-5xl font-semibold text-foreground mb-3">
+            {t.heroTitle}
+          </h1>
+          <p className="text-base md:text-lg text-muted-foreground max-w-md mx-auto">
+            {t.heroSubtitle}
           </p>
         </div>
+      </section>
 
-        {!isAuthenticated && (
-          <Card className="mb-8 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-            <CardContent className="p-6 text-center">
-              <p className="text-blue-900 dark:text-blue-100 mb-4">
-                يجب تسجيل الدخول للوصول إلى المرشدين السياحيين
-              </p>
-              <Button onClick={() => setLocation('/login')}>
-                تسجيل الدخول
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+      <section className="py-6 md:py-8">
+        <div className="container mx-auto px-4">
+          <div className="max-w-md mx-auto">
+            <div className="relative">
+              <Search className="absolute top-1/2 -translate-y-1/2 start-4 w-5 h-5 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder={t.searchPlaceholder}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-12 ps-12 pe-4 rounded-full border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
 
-        {isAuthenticated && user?.tier !== 'pro' && (
-          <Card className="mb-8 bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800">
-            <CardContent className="p-6 text-center">
-              <p className="text-purple-900 dark:text-purple-100 mb-4">
-                المرشدون متاحون للمشتركين الاحترافيين فقط
-              </p>
-              <Button 
-                className="bg-purple-600 hover:bg-purple-700"
-                onClick={() => toast.info('صفحة الباقات قريباً')}
+      <section className="py-6 md:py-10">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto">
+            {tourGuides.map((guide) => (
+              <div
+                key={guide.id}
+                className="bg-card rounded-2xl border border-border p-5 flex flex-col items-center text-center transition-shadow hover:shadow-md"
               >
-                ترقية الباقة
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tourGuides.map((guide) => (
-            <Card key={guide.id} className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex flex-col items-center text-center mb-4">
-                  <div className="w-20 h-20 bg-gradient-to-br from-green-700 to-yellow-600 rounded-full flex items-center justify-center text-white text-3xl mb-3">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <span className="text-2xl font-semibold text-primary">
                     {guide.name.charAt(0)}
-                  </div>
-                  <h3 className="text-xl font-bold mb-1">{guide.name}</h3>
-                  <div className="flex items-center gap-1 text-yellow-500 mb-2">
-                    <Star className="w-4 h-4 fill-current" />
-                    <span className="font-medium">{guide.rating}</span>
-                  </div>
-                  <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">
-                    {guide.specialty}
-                  </p>
+                  </span>
                 </div>
 
-                <div className="space-y-2 mb-4 text-sm">
-                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                    <MapPin className="w-4 h-4" />
-                    <span>{guide.cities}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                    <Briefcase className="w-4 h-4" />
-                    <span>خبرة {guide.experience} سنوات</span>
-                  </div>
+                <h3 className="text-base font-medium text-foreground mb-1">
+                  {language === "ar" ? guide.name : guide.nameEn}
+                </h3>
+
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-3">
+                  <MapPin className="w-4 h-4" />
+                  <span>{language === "ar" ? guide.city : guide.cityEn}</span>
                 </div>
 
-                <div className="text-center mb-4">
-                  <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                    {guide.price} ريال/ساعة
-                  </p>
+                <div className="flex items-center gap-1 text-sm text-muted-foreground mb-5">
+                  <Star className="w-4 h-4 text-primary fill-primary" />
+                  <span>{guide.rating}</span>
                 </div>
 
                 <Button
-                  className="w-full bg-gradient-to-r from-green-700 to-green-600 hover:from-purple-700 hover:to-blue-700"
-                  onClick={() => handleBookGuide(guide.name)}
-                  disabled={!isAuthenticated || user?.tier !== 'pro'}
+                  variant="outline"
+                  className="w-full h-12 rounded-full text-sm font-medium"
                 >
-                  {!isAuthenticated 
-                    ? 'يجب تسجيل الدخول' 
-                    : user?.tier !== 'pro' 
-                    ? 'للمحترفين فقط' 
-                    : 'احجز الآن'}
+                  {t.viewProfile}
                 </Button>
-              </CardContent>
-            </Card>
-          ))}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      </section>
+
+      <footer
+        className="bg-secondary/50 py-10 mt-auto"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 2.5rem)" }}
+      >
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-xs text-muted-foreground/70">{t.footer}</p>
+        </div>
+      </footer>
     </div>
   );
 }
