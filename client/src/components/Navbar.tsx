@@ -100,7 +100,7 @@ export function Navbar({ language, onToggleLanguage }: NavbarProps) {
                 onClick={onToggleLanguage}
                 className="text-sm"
               >
-                {language === "ar" ? "EN" : "عربي"}
+                {language === "ar" ? "English" : "العربية"}
               </Button>
 
               {isAuthenticated ? (
