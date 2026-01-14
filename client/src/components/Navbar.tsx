@@ -23,8 +23,8 @@ const navLinks: NavLink[] = [
   { href: "/", labelAr: "الرئيسية", labelEn: "Home" },
   { href: "/packages", labelAr: "الباقات", labelEn: "Plans" },
   { href: "/guides", labelAr: "المرشدون", labelEn: "Guides" },
-  { href: "/about", labelAr: "عن مرحال", labelEn: "About" },
-  { href: "/support", labelAr: "المساعدة", labelEn: "Help" },
+  { href: "/about", labelAr: "حول", labelEn: "About" },
+  { href: "/support", labelAr: "الدعم", labelEn: "Help" },
 ];
 
 export function Navbar() {
@@ -104,7 +104,7 @@ export function Navbar() {
                   size="sm"
                   onClick={() => (window.location.href = "/dashboard")}
                 >
-                  {language === "ar" ? "حسابي" : "My Account"}
+                  {language === "ar" ? "الحساب" : "My Account"}
                 </Button>
               ) : (
                 <>
@@ -119,7 +119,7 @@ export function Navbar() {
                     size="sm"
                     onClick={() => (window.location.href = "/register")}
                   >
-                    {language === "ar" ? "ابدأ الآن" : "Get Started"}
+                    {language === "ar" ? "سجّل" : "Get Started"}
                   </Button>
                 </>
               )}
@@ -196,7 +196,7 @@ export function Navbar() {
                 className="w-full h-12"
                 onClick={() => handleNavClick("/dashboard")}
               >
-                {language === "ar" ? "حسابي" : "My Account"}
+                {language === "ar" ? "الحساب" : "My Account"}
               </Button>
             ) : (
               <div className="flex flex-col gap-2">
@@ -204,7 +204,7 @@ export function Navbar() {
                   className="w-full h-12"
                   onClick={() => handleNavClick("/register")}
                 >
-                  {language === "ar" ? "ابدأ الآن" : "Get Started"}
+                  {language === "ar" ? "سجّل" : "Get Started"}
                 </Button>
                 <Button
                   variant="outline"

@@ -32,8 +32,8 @@ export default function Support() {
 
   const content = {
     ar: {
-      heroTitle: "المساعدة",
-      heroSubtitle: "كيف يمكننا مساعدتك؟",
+      heroTitle: "الدعم",
+      heroSubtitle: "نحن هنا للمساعدة",
       nameLabel: "الاسم",
       namePlaceholder: "اسمك الكامل",
       emailLabel: "البريد الإلكتروني",
@@ -51,7 +51,7 @@ export default function Support() {
       submitBtn: "إرسال",
       loadingBtn: "جارٍ الإرسال...",
       successTitle: "تم الإرسال",
-      successMessage: "استلمنا رسالتك. سنتواصل معك قريباً.",
+      successMessage: "وصلتنا رسالتك. نرد خلال ٢٤ ساعة.",
       sendAnother: "رسالة جديدة",
       errors: {
         nameRequired: "أدخل اسمك",

@@ -102,17 +102,17 @@ export default function Home() {
   const content = {
     ar: {
       hero: {
-        title: 'اكتشف السعودية',
-        subtitle: 'رحلات مخصصة لك. خطط بذكاء.',
-        cta: 'ابدأ التخطيط'
+        title: 'رحلتك تبدأ من هنا',
+        subtitle: 'خطط. اكتشف. انطلق.',
+        cta: 'ابدأ الآن'
       },
-      destinationsTitle: 'وجهات مميزة',
-      destinationsSubtitle: 'أجمل المدن في انتظارك',
+      destinationsTitle: 'اختر وجهتك',
+      destinationsSubtitle: 'مدن تستحق الزيارة',
       explore: 'اكتشف',
-      featuresTitle: 'لماذا مرحال؟',
+      featuresTitle: 'مميزات مرحال',
       ctaSection: {
-        title: 'جاهز للانطلاق؟',
-        subtitle: 'ابدأ رحلتك القادمة الآن',
+        title: 'جاهز؟',
+        subtitle: 'ابدأ التخطيط الآن',
         button: 'ابدأ مجاناً'
       },
       footer: '© 2026 مرحال. جميع الحقوق محفوظة.'
@@ -224,7 +224,7 @@ export default function Home() {
               {t.featuresTitle}
             </h2>
             <p className="text-base text-muted-foreground max-w-md mx-auto">
-              {language === 'ar' ? 'أدوات ذكية لرحلة مثالية' : 'Smart tools for your perfect trip'}
+              {language === 'ar' ? 'كل ما تحتاجه في مكان واحد' : 'Smart tools for your perfect trip'}
             </p>
           </div>
 
@@ -286,13 +286,13 @@ export default function Home() {
 
             <nav className="flex flex-wrap justify-center gap-6 md:gap-8">
               <a href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                {language === 'ar' ? 'عن مرحال' : 'About'}
+                {language === 'ar' ? 'حول' : 'About'}
               </a>
               <a href="/packages" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 {language === 'ar' ? 'الباقات' : 'Plans'}
               </a>
               <a href="/support" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                {language === 'ar' ? 'المساعدة' : 'Help'}
+                {language === 'ar' ? 'الدعم' : 'Help'}
               </a>
             </nav>
 

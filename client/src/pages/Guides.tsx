@@ -71,7 +71,7 @@ export default function Guides() {
   const content = {
     ar: {
       heroTitle: "المرشدون",
-      heroSubtitle: "مرشدون معتمدون يرافقونك في رحلتك",
+      heroSubtitle: "خبراء محليون لتجربة أفضل",
       searchPlaceholder: "ابحث باسم المرشد...",
       viewProfile: "عرض الملف",
       proBadge: "Pro",

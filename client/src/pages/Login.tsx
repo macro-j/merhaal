@@ -24,7 +24,7 @@ export default function Login() {
   const content = {
     ar: {
       title: "تسجيل الدخول",
-      subtitle: "أدخل بياناتك للمتابعة",
+      subtitle: "سجّل دخولك للمتابعة",
       emailLabel: "البريد الإلكتروني",
       emailPlaceholder: "example@email.com",
       passwordLabel: "كلمة المرور",
