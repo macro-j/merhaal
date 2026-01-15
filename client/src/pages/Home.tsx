@@ -115,7 +115,7 @@ export default function Home() {
       subtitleEn: 'A Living Museum in the Desert',
       description: 'موقع يونسكو مع طبيعة خلابة وآثار عريقة ومناظر صحراوية ساحرة',
       descriptionEn: 'UNESCO site with stunning nature, ancient ruins and charming desert landscapes',
-      image: '/images/cities/alula-hero.jpg'
+      image: '/images/cities/alula-hero.png'
     }
   ];
 
