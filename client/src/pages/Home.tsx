@@ -45,6 +45,26 @@ export default function Home() {
       description: 'مصيف الجزيرة العربية بجبالها الخضراء وأجوائها المعتدلة وحدائق الورد',
       descriptionEn: 'Summer resort of Arabia with green mountains, mild weather and rose gardens',
       image: '/images/cities/taif-hero.jpg'
+    },
+    {
+      id: 'أبها',
+      name: 'أبها',
+      nameEn: 'Abha',
+      subtitle: 'عروس الجنوب',
+      subtitleEn: 'Bride of the South',
+      description: 'جبال خضراء وطبيعة ساحرة في منطقة عسير',
+      descriptionEn: 'Green mountains and charming nature in Asir region',
+      image: '/images/cities/abha-hero.jpg'
+    },
+    {
+      id: 'العلا',
+      name: 'العلا',
+      nameEn: 'AlUla',
+      subtitle: 'متحف حي في الصحراء',
+      subtitleEn: 'A Living Museum in the Desert',
+      description: 'موقع يونسكو مع طبيعة خلابة وآثار عريقة ومناظر صحراوية ساحرة',
+      descriptionEn: 'UNESCO site with stunning nature, ancient ruins and charming desert landscapes',
+      image: '/images/cities/alula-hero.jpg'
     }
   ];
 
