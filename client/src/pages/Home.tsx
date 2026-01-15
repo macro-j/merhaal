@@ -202,12 +202,12 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 px-4 hide-scrollbar md:grid md:grid-cols-4 md:gap-6 md:overflow-visible md:px-4">
+          <div className="flex gap-4 md:gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 px-4 md:px-8 hide-scrollbar">
             {destinations.map((dest, index) => (
               <button 
                 key={index}
                 onClick={() => setSelectedCity(dest.id)}
-                className="group relative flex-shrink-0 w-[280px] md:w-auto snap-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-2xl card-hover"
+                className="group relative flex-shrink-0 w-[280px] md:w-[320px] lg:w-[340px] snap-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-2xl card-hover"
               >
                 <div className="aspect-[4/5] relative overflow-hidden rounded-2xl">
                   <img 
