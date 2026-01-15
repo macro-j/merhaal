@@ -45,11 +45,11 @@ export default function Home() {
     if (!carousel) return;
 
     const timeout = setTimeout(() => {
-      carousel.scrollTo({ left: 16, behavior: 'smooth' });
+      carousel.scrollTo({ left: 10, behavior: 'smooth' });
       setTimeout(() => {
         carousel.scrollTo({ left: 0, behavior: 'smooth' });
-      }, 300);
-    }, 500);
+      }, 250);
+    }, 400);
 
     return () => clearTimeout(timeout);
   }, [destinationsInView]);
@@ -306,7 +306,7 @@ export default function Home() {
               <ChevronRight className="w-5 h-5" />
             </button>
 
-            <div className="flex md:hidden justify-center gap-2 mt-4">
+            <div className="flex md:hidden justify-center gap-2 mt-2">
               {destinations.map((_, index) => (
                 <button
                   key={index}
@@ -316,10 +316,10 @@ export default function Home() {
                     const gap = 12;
                     carouselRef.current.scrollTo({ left: index * (cardWidth + gap), behavior: 'smooth' });
                   }}
-                  className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                  className={`h-2 rounded-full transition-all duration-200 ${
                     activeIndex === index 
-                      ? 'bg-primary w-4' 
-                      : 'bg-foreground/20 hover:bg-foreground/30'
+                      ? 'bg-primary w-5' 
+                      : 'bg-foreground/25 w-2'
                   }`}
                   aria-label={`${language === 'ar' ? 'انتقل إلى' : 'Go to'} ${index + 1}`}
                 />
