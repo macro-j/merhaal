@@ -23,6 +23,12 @@ export default function Packages() {
       titleEn: "Start your journey easily",
       description: "مناسب لمن يريد خطة سريعة وواضحة دون تعقيد.",
       descriptionEn: "Perfect for those who want a quick and clear plan without complexity.",
+      price: "مجانية",
+      priceEn: "Free",
+      priceSecondary: null,
+      priceSecondaryEn: null,
+      cta: "ابدأ الآن",
+      ctaEn: "Start Now",
       features: [
         { text: "إنشاء خطة رحلة واحدة", textEn: "Create one trip plan" },
         { text: "اقتراحات لأشهر الأماكن والمطاعم", textEn: "Suggestions for popular places and restaurants" },
@@ -38,6 +44,12 @@ export default function Packages() {
       titleEn: "Plan your trip your way",
       description: "تحكم أكبر وتخصيص أوسع لرحلتك.",
       descriptionEn: "More control and wider customization for your trip.",
+      price: "14.99 ريال / خطة",
+      priceEn: "SAR 14.99 / plan",
+      priceSecondary: null,
+      priceSecondaryEn: null,
+      cta: "ترقية",
+      ctaEn: "Upgrade",
       features: [
         { text: "إنشاء عدة خطط", textEn: "Create multiple plans" },
         { text: "تخصيص حسب الميزانية ونوع الرحلة", textEn: "Customize by budget and trip type" },
@@ -53,6 +65,12 @@ export default function Packages() {
       titleEn: "The complete experience for a perfect trip",
       description: "أقصى درجات التخصيص والراحة.",
       descriptionEn: "Maximum customization and comfort.",
+      price: "29.99 ريال شهريًا",
+      priceEn: "SAR 29.99 / month",
+      priceSecondary: "أو 249 ريال سنويًا",
+      priceSecondaryEn: "or SAR 249 / year",
+      cta: "ترقية إلى بريميوم",
+      ctaEn: "Upgrade to Premium",
       features: [
         { text: "تخصيص ذكي متقدم حسب الوقت والاهتمامات", textEn: "Advanced smart customization by time and interests" },
         { text: "اقتراحات أماكن فريدة وغير تقليدية", textEn: "Unique and unconventional place suggestions" },
@@ -66,12 +84,10 @@ export default function Packages() {
     ar: {
       title: "الباقات",
       subtitle: "اختر الباقة المناسبة لاحتياجاتك",
-      selectBtn: "اختر الباقة",
     },
     en: {
       title: "Plans",
       subtitle: "Choose the plan that fits your needs",
-      selectBtn: "Select Plan",
     }
   };
 
@@ -108,6 +124,16 @@ export default function Packages() {
                   <h3 className="text-lg font-semibold text-foreground mb-1">
                     {language === 'ar' ? pkg.name : pkg.nameEn}
                   </h3>
+                  <div className="mb-3">
+                    <p className="text-xl font-semibold text-foreground">
+                      {language === 'ar' ? pkg.price : pkg.priceEn}
+                    </p>
+                    {pkg.priceSecondary && (
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {language === 'ar' ? pkg.priceSecondary : pkg.priceSecondaryEn}
+                      </p>
+                    )}
+                  </div>
                   <p className="text-base font-medium text-primary mb-2">
                     {language === 'ar' ? pkg.title : pkg.titleEn}
                   </p>
@@ -133,7 +159,7 @@ export default function Packages() {
                   onClick={() => handleSelectPackage(language === 'ar' ? pkg.name : pkg.nameEn)}
                   className="w-full h-12 rounded-full text-base font-medium bg-primary text-primary-foreground hover:bg-primary/90"
                 >
-                  {t.selectBtn}
+                  {language === 'ar' ? pkg.cta : pkg.ctaEn}
                 </Button>
               </div>
             ))}
