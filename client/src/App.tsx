@@ -14,9 +14,13 @@ import About from "./pages/About";
 import Guides from "./pages/Guides";
 import Support from "./pages/Support";
 import Packages from "./pages/Packages";
+import MyPlans from "./pages/MyPlans";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminCities from "./pages/admin/AdminCities";
+import AdminActivities from "./pages/admin/AdminActivities";
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path={"/"} component={Home} />
@@ -24,12 +28,16 @@ function Router() {
       <Route path={"/register"} component={Register} />
       <Route path={"/dashboard"} component={Dashboard} />
       <Route path={"/plan-trip"} component={PlanTrip} />
-        <Route path="/guides" component={Guides} />
+      <Route path={"/my-plans"} component={MyPlans} />
+      <Route path="/guides" component={Guides} />
       <Route path="/about" component={About} />
       <Route path="/support" component={Support} />
       <Route path="/packages" component={Packages} />
+      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin/users" component={AdminUsers} />
+      <Route path="/admin/cities" component={AdminCities} />
+      <Route path="/admin/activities" component={AdminActivities} />
       <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
       <Route component={NotFound} />
     </Switch>
   );

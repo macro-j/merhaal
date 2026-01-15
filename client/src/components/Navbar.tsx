@@ -32,7 +32,8 @@ export function Navbar() {
   const [location] = useLocation();
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage } = useLanguage();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const isAdmin = user?.role === 'admin';
 
   const isActive = (href: string) => {
     if (href === "/") return location === "/";
@@ -104,12 +105,30 @@ export function Navbar() {
               </Button>
 
               {isAuthenticated ? (
-                <Button
-                  size="sm"
-                  onClick={() => (window.location.href = "/dashboard")}
-                >
-                  {language === "ar" ? "الحساب" : "My Account"}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => (window.location.href = "/my-plans")}
+                  >
+                    {language === "ar" ? "خططي" : "My Plans"}
+                  </Button>
+                  {isAdmin && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => (window.location.href = "/admin")}
+                    >
+                      {language === "ar" ? "الإدارة" : "Admin"}
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    onClick={() => (window.location.href = "/dashboard")}
+                  >
+                    {language === "ar" ? "الحساب" : "My Account"}
+                  </Button>
+                </div>
               ) : (
                 <>
                   <Button
@@ -196,12 +215,30 @@ export function Navbar() {
             </div>
 
             {isAuthenticated ? (
-              <Button
-                className="w-full h-12"
-                onClick={() => handleNavClick("/dashboard")}
-              >
-                {language === "ar" ? "الحساب" : "My Account"}
-              </Button>
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="outline"
+                  className="w-full h-12"
+                  onClick={() => handleNavClick("/my-plans")}
+                >
+                  {language === "ar" ? "خططي" : "My Plans"}
+                </Button>
+                {isAdmin && (
+                  <Button
+                    variant="outline"
+                    className="w-full h-12"
+                    onClick={() => handleNavClick("/admin")}
+                  >
+                    {language === "ar" ? "الإدارة" : "Admin"}
+                  </Button>
+                )}
+                <Button
+                  className="w-full h-12"
+                  onClick={() => handleNavClick("/dashboard")}
+                >
+                  {language === "ar" ? "الحساب" : "My Account"}
+                </Button>
+              </div>
             ) : (
               <div className="flex flex-col gap-2">
                 <Button

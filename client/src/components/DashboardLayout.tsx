@@ -21,16 +21,26 @@ import {
 } from "@/components/ui/sidebar";
 import { APP_LOGO, APP_TITLE, getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, MapPin, Calendar, Settings } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
+import { useLanguage } from "@/contexts/LanguageContext";
 
-const menuItems = [
-  { icon: LayoutDashboard, label: "Page 1", path: "/" },
-  { icon: Users, label: "Page 2", path: "/some-path" },
-];
+const getMenuItems = (language: 'ar' | 'en', isAdmin: boolean) => {
+  const items = [
+    { icon: LayoutDashboard, label: language === 'ar' ? "لوحة التحكم" : "Dashboard", path: "/dashboard" },
+    { icon: MapPin, label: language === 'ar' ? "خطط رحلة" : "Plan Trip", path: "/plan-trip" },
+    { icon: Calendar, label: language === 'ar' ? "خططي" : "My Plans", path: "/my-plans" },
+  ];
+  
+  if (isAdmin) {
+    items.push({ icon: Settings, label: language === 'ar' ? "الإدارة" : "Admin", path: "/admin" });
+  }
+  
+  return items;
+};
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 280;
@@ -121,6 +131,8 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const { language } = useLanguage();
+  const menuItems = getMenuItems(language, user?.role === 'admin');
   const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
 

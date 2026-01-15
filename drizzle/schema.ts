@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, decimal } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, decimal, boolean } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -24,8 +24,10 @@ export type InsertUser = typeof users.$inferInsert;
 /**
  * Destinations/Cities table
  */
+
 export const destinations = mysqlTable("destinations", {
   id: int("id").autoincrement().primaryKey(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
   nameAr: varchar("nameAr", { length: 100 }).notNull(),
   nameEn: varchar("nameEn", { length: 100 }).notNull(),
   titleAr: varchar("titleAr", { length: 200 }).notNull(),
@@ -33,6 +35,7 @@ export const destinations = mysqlTable("destinations", {
   descriptionAr: text("descriptionAr").notNull(),
   descriptionEn: text("descriptionEn").notNull(),
   images: json("images").$type<string[]>().notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -47,12 +50,14 @@ export const activities = mysqlTable("activities", {
   id: int("id").autoincrement().primaryKey(),
   destinationId: int("destinationId").notNull(),
   name: varchar("name", { length: 200 }).notNull(),
-  type: varchar("type", { length: 100 }).notNull(), // 'ثقافة وتراث', 'تسوق وترفيه', etc.
+  nameEn: varchar("nameEn", { length: 200 }),
+  type: varchar("type", { length: 100 }).notNull(),
   duration: varchar("duration", { length: 50 }),
   cost: decimal("cost", { precision: 10, scale: 2 }).default("0"),
   icon: varchar("icon", { length: 50 }),
   minTier: mysqlEnum("minTier", ["free", "smart", "professional"]).default("free").notNull(),
   details: text("details"),
+  isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

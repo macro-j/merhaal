@@ -120,3 +120,122 @@ export async function updateUserTier(userId: number, tier: 'free' | 'smart' | 'p
   if (!db) throw new Error('Database not available');
   await db.update(users).set({ tier }).where(eq(users.id, userId));
 }
+
+// ============ ADMIN FUNCTIONS ============
+
+// Users Admin
+export async function getAllUsers() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: users.id,
+    name: users.name,
+    email: users.email,
+    role: users.role,
+    tier: users.tier,
+    createdAt: users.createdAt,
+  }).from(users);
+}
+
+export async function updateUserRole(userId: number, role: 'user' | 'admin') {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.update(users).set({ role }).where(eq(users.id, userId));
+}
+
+// Destinations Admin
+export async function createDestination(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { destinations } = await import('../drizzle/schema');
+  const result = await db.insert(destinations).values(data).$returningId();
+  return result[0];
+}
+
+export async function updateDestination(id: number, data: any) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { destinations } = await import('../drizzle/schema');
+  await db.update(destinations).set(data).where(eq(destinations.id, id));
+}
+
+export async function deleteDestination(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { destinations } = await import('../drizzle/schema');
+  await db.delete(destinations).where(eq(destinations.id, id));
+}
+
+export async function getActiveDestinations() {
+  const db = await getDb();
+  if (!db) return [];
+  const { destinations } = await import('../drizzle/schema');
+  return db.select().from(destinations).where(eq(destinations.isActive, true));
+}
+
+// Activities Admin
+export async function createActivity(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { activities } = await import('../drizzle/schema');
+  const result = await db.insert(activities).values(data).$returningId();
+  return result[0];
+}
+
+export async function updateActivity(id: number, data: any) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { activities } = await import('../drizzle/schema');
+  await db.update(activities).set(data).where(eq(activities.id, id));
+}
+
+export async function deleteActivity(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { activities } = await import('../drizzle/schema');
+  await db.delete(activities).where(eq(activities.id, id));
+}
+
+export async function getAllActivities() {
+  const db = await getDb();
+  if (!db) return [];
+  const { activities } = await import('../drizzle/schema');
+  return db.select().from(activities);
+}
+
+export async function getActiveActivitiesByDestination(destinationId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const { activities } = await import('../drizzle/schema');
+  const { and } = await import('drizzle-orm');
+  return db.select().from(activities).where(
+    and(eq(activities.destinationId, destinationId), eq(activities.isActive, true))
+  );
+}
+
+// Count user trips for tier limits
+export async function countUserTrips(userId: number) {
+  const db = await getDb();
+  if (!db) return 0;
+  const { trips } = await import('../drizzle/schema');
+  const { count } = await import('drizzle-orm');
+  const result = await db.select({ count: count() }).from(trips).where(eq(trips.userId, userId));
+  return result[0]?.count || 0;
+}
+
+// Get trip by ID
+export async function getTripById(tripId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const { trips } = await import('../drizzle/schema');
+  const result = await db.select().from(trips).where(eq(trips.id, tripId)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+// Delete trip
+export async function deleteTrip(tripId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { trips } = await import('../drizzle/schema');
+  await db.delete(trips).where(eq(trips.id, tripId));
+}

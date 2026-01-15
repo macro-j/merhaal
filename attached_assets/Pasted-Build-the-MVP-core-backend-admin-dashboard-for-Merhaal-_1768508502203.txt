@@ -1,0 +1,155 @@
+Build the MVP core backend + admin dashboard for Merhaal in ONE pass (low-complexity, no payment systems, no AI).
+
+Goal:
+A working prototype where:
+- Admin can manage cities/places
+- Users can sign up / sign in
+- Admin can manually upgrade user plan (Free/Plus/Premium)
+- Users can create a trip plan and the system generates a plan using rules-based logic from DB data
+- Everything works locally and can be deployed externally later
+
+IMPORTANT CONSTRAINTS:
+- NO payment gateways
+- NO external APIs
+- NO AI
+- Keep changes minimal and focused
+- Use existing stack (React/Vite frontend, Express/tRPC backend if present, Drizzle ORM + MySQL)
+- Do not redesign existing UI; add only necessary pages/components
+
+PART 1 — Database (Drizzle + migrations)
+Create/extend tables:
+
+1) users
+- id (uuid or serial)
+- email (unique)
+- password_hash
+- name
+- plan_tier (enum: free | plus | premium) default free
+- created_at
+
+2) cities
+- id
+- slug (unique, e.g. riyadh, jeddah)
+- name_ar
+- name_en
+- image_path (string, e.g. /images/cities/riyadh-hero.jpg)
+- is_active (bool) default true
+- created_at
+
+3) places
+- id
+- city_id (FK)
+- name_ar
+- name_en
+- category (enum: food | culture | nature | shopping | activity)
+- tags (string or json array: family, solo, luxury, budget, kids, etc.)
+- est_duration_minutes (int)
+- price_level (int 1-3 optional)
+- is_active (bool) default true
+
+4) plans
+- id
+- user_id (FK)
+- city_id (FK)
+- days (int)
+- preferences (json: categories/tags/budget)
+- title (string)
+- created_at
+
+5) plan_days
+- id
+- plan_id (FK)
+- day_number (int)
+- summary (string)
+
+6) plan_items
+- id
+- plan_day_id (FK)
+- place_id (FK)
+- slot (enum: morning | afternoon | evening)
+- notes (string optional)
+
+Run migrations and update seed scripts if needed.
+
+PART 2 — Authentication (simple, secure enough for MVP)
+- Implement signup/signin using email + password.
+- Hash passwords (bcrypt).
+- Use session cookie or JWT (keep it simple and consistent with existing code).
+- Protect user routes.
+- Keep UI for Login/Register as already designed; wire it to real endpoints.
+
+PART 3 — Admin Dashboard (owner-only)
+Add an admin section:
+- Route: /admin
+- Access control: simple and safe for MVP:
+  - Require an ADMIN_SECRET (env var) or admin password prompt stored in session.
+  - Do NOT expose admin publicly without protection.
+
+Admin features (CRUD):
+A) Cities CRUD
+- List cities, add/edit, activate/deactivate
+- Fields: slug, name_ar, name_en, image_path, is_active
+
+B) Places CRUD
+- Filter by city
+- Add/edit, activate/deactivate
+- Fields: city_id, name_ar, name_en, category, tags, duration, price_level, is_active
+
+C) Users admin
+- List users (email, name, plan_tier)
+- Admin can update plan_tier manually (free/plus/premium)
+- No payments. No billing.
+
+UI:
+- Simple tables + forms (functional, minimal styling)
+- No redesign of public site.
+
+PART 4 — Plan Creation + Rules-based Generator (core MVP)
+Add a page/flow for users:
+- /plan (or /create-plan)
+- Inputs:
+  - city (only active cities)
+  - days (1-3 for free, up to 10 for plus, up to 21 for premium)
+  - preferences:
+    - categories (food/culture/nature/shopping/activity)
+    - optional tags (family/budget/etc.)
+- Submit generates a plan and saves it in DB.
+
+Rules-based generation logic:
+- For each day:
+  - Pick 2–3 places based on preferences and category diversity:
+    morning = culture/nature
+    afternoon = activity/shopping
+    evening = food
+- Avoid duplicates across days.
+- If not enough places in a category, gracefully fallback to any active place in the city.
+- Free tier limitations:
+  - max days = 3
+  - max saved plans = 1 (or allow generate but only save last one)
+- Plus limitations:
+  - max days = 10
+  - max saved plans = 10
+- Premium:
+  - max days = 21
+  - saved plans unlimited
+
+Create "My Plans" page:
+- /my-plans
+- List plans for logged-in user
+- View details day-by-day.
+
+PART 5 — Integration & Safety
+- Ensure the existing UI theme remains unchanged.
+- Add only necessary navigation links (e.g., "خططي" for logged-in users; admin link hidden unless admin).
+- Ensure RTL/LTR works with existing LanguageContext.
+- Add minimal error handling + loading states.
+
+DELIVERABLES REQUIRED:
+- List all modified/new files
+- Explain how to run migrations / seed
+- Provide a short test checklist:
+  - signup/signin works
+  - admin creates city/place
+  - user generates plan
+  - admin upgrades user and limits change accordingly
+  - plans saved and viewable

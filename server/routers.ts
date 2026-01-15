@@ -215,6 +215,32 @@ export const appRouter = router({
         
         if (!user) throw new TRPCError({ code: 'UNAUTHORIZED' });
 
+        // Check tier limits
+        const userTier = user.tier || 'free';
+        const tierLimits = {
+          free: { maxDays: 1, maxTrips: 1 },
+          smart: { maxDays: 10, maxTrips: 3 },
+          professional: { maxDays: 999, maxTrips: 999 },
+        };
+        const limits = tierLimits[userTier as keyof typeof tierLimits];
+
+        // Check day limit
+        if (input.days > limits.maxDays) {
+          throw new TRPCError({ 
+            code: 'FORBIDDEN', 
+            message: `باقتك الحالية تسمح بـ ${limits.maxDays} أيام كحد أقصى. قم بترقية باقتك للمزيد!` 
+          });
+        }
+
+        // Check trip count limit
+        const existingTrips = await db.getUserTrips(decoded.userId);
+        if (existingTrips.length >= limits.maxTrips) {
+          throw new TRPCError({ 
+            code: 'FORBIDDEN', 
+            message: `باقتك الحالية تسمح بـ ${limits.maxTrips} رحلات محفوظة. قم بترقية باقتك أو احذف رحلة قديمة!` 
+          });
+        }
+
         // Generate trip plan
         const destination = await db.getDestinationById(input.destinationId);
         if (!destination) {
@@ -244,7 +270,6 @@ export const appRouter = router({
         }
 
         // Filter activities by tier and budget
-        const userTier = user.tier || 'free';
         let filteredActivities = activities.filter(activity => {
           const activityTier = activity.minTier || 'free';
           let tierAllowed = false;
@@ -351,6 +376,270 @@ export const appRouter = router({
         await db.updateUserTier(decoded.userId, input.tier);
         return { success: true };
       }),
+  }),
+
+  admin: router({
+    checkAccess: protectedProcedure.query(async ({ ctx }) => {
+      const authHeader = ctx.req.headers.authorization;
+      if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+      
+      const token = authHeader.substring(7);
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+      const user = await db.getUserById(decoded.userId);
+      
+      if (!user || user.role !== 'admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+      }
+      
+      return { isAdmin: true };
+    }),
+
+    users: router({
+      list: protectedProcedure.query(async ({ ctx }) => {
+        const authHeader = ctx.req.headers.authorization;
+        if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        
+        const token = authHeader.substring(7);
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+        const user = await db.getUserById(decoded.userId);
+        
+        if (!user || user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN' });
+        }
+        
+        return await db.getAllUsers();
+      }),
+
+      updateTier: protectedProcedure
+        .input(z.object({
+          userId: z.number(),
+          tier: z.enum(['free', 'smart', 'professional']),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          const authHeader = ctx.req.headers.authorization;
+          if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+          
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+          const user = await db.getUserById(decoded.userId);
+          
+          if (!user || user.role !== 'admin') {
+            throw new TRPCError({ code: 'FORBIDDEN' });
+          }
+          
+          await db.updateUserTier(input.userId, input.tier);
+          return { success: true };
+        }),
+
+      updateRole: protectedProcedure
+        .input(z.object({
+          userId: z.number(),
+          role: z.enum(['user', 'admin']),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          const authHeader = ctx.req.headers.authorization;
+          if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+          
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+          const user = await db.getUserById(decoded.userId);
+          
+          if (!user || user.role !== 'admin') {
+            throw new TRPCError({ code: 'FORBIDDEN' });
+          }
+          
+          await db.updateUserRole(input.userId, input.role);
+          return { success: true };
+        }),
+    }),
+
+    destinations: router({
+      list: protectedProcedure.query(async ({ ctx }) => {
+        const authHeader = ctx.req.headers.authorization;
+        if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        
+        const token = authHeader.substring(7);
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+        const user = await db.getUserById(decoded.userId);
+        
+        if (!user || user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN' });
+        }
+        
+        return await db.getAllDestinations();
+      }),
+
+      create: protectedProcedure
+        .input(z.object({
+          slug: z.string().min(2),
+          nameAr: z.string().min(2),
+          nameEn: z.string().min(2),
+          titleAr: z.string().min(2),
+          titleEn: z.string().min(2),
+          descriptionAr: z.string().min(10),
+          descriptionEn: z.string().min(10),
+          images: z.array(z.string()),
+          isActive: z.boolean().default(true),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          const authHeader = ctx.req.headers.authorization;
+          if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+          
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+          const user = await db.getUserById(decoded.userId);
+          
+          if (!user || user.role !== 'admin') {
+            throw new TRPCError({ code: 'FORBIDDEN' });
+          }
+          
+          const result = await db.createDestination(input);
+          return { id: result.id };
+        }),
+
+      update: protectedProcedure
+        .input(z.object({
+          id: z.number(),
+          slug: z.string().optional(),
+          nameAr: z.string().optional(),
+          nameEn: z.string().optional(),
+          titleAr: z.string().optional(),
+          titleEn: z.string().optional(),
+          descriptionAr: z.string().optional(),
+          descriptionEn: z.string().optional(),
+          images: z.array(z.string()).optional(),
+          isActive: z.boolean().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          const authHeader = ctx.req.headers.authorization;
+          if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+          
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+          const user = await db.getUserById(decoded.userId);
+          
+          if (!user || user.role !== 'admin') {
+            throw new TRPCError({ code: 'FORBIDDEN' });
+          }
+          
+          const { id, ...data } = input;
+          await db.updateDestination(id, data);
+          return { success: true };
+        }),
+
+      delete: protectedProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(async ({ ctx, input }) => {
+          const authHeader = ctx.req.headers.authorization;
+          if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+          
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+          const user = await db.getUserById(decoded.userId);
+          
+          if (!user || user.role !== 'admin') {
+            throw new TRPCError({ code: 'FORBIDDEN' });
+          }
+          
+          await db.deleteDestination(input.id);
+          return { success: true };
+        }),
+    }),
+
+    activities: router({
+      list: protectedProcedure.query(async ({ ctx }) => {
+        const authHeader = ctx.req.headers.authorization;
+        if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        
+        const token = authHeader.substring(7);
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+        const user = await db.getUserById(decoded.userId);
+        
+        if (!user || user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN' });
+        }
+        
+        return await db.getAllActivities();
+      }),
+
+      create: protectedProcedure
+        .input(z.object({
+          destinationId: z.number(),
+          name: z.string().min(2),
+          nameEn: z.string().optional(),
+          type: z.string().min(2),
+          duration: z.string().optional(),
+          cost: z.string().optional(),
+          icon: z.string().optional(),
+          minTier: z.enum(['free', 'smart', 'professional']).default('free'),
+          details: z.string().optional(),
+          isActive: z.boolean().default(true),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          const authHeader = ctx.req.headers.authorization;
+          if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+          
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+          const user = await db.getUserById(decoded.userId);
+          
+          if (!user || user.role !== 'admin') {
+            throw new TRPCError({ code: 'FORBIDDEN' });
+          }
+          
+          const result = await db.createActivity(input);
+          return { id: result.id };
+        }),
+
+      update: protectedProcedure
+        .input(z.object({
+          id: z.number(),
+          destinationId: z.number().optional(),
+          name: z.string().optional(),
+          nameEn: z.string().optional(),
+          type: z.string().optional(),
+          duration: z.string().optional(),
+          cost: z.string().optional(),
+          icon: z.string().optional(),
+          minTier: z.enum(['free', 'smart', 'professional']).optional(),
+          details: z.string().optional(),
+          isActive: z.boolean().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          const authHeader = ctx.req.headers.authorization;
+          if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+          
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+          const user = await db.getUserById(decoded.userId);
+          
+          if (!user || user.role !== 'admin') {
+            throw new TRPCError({ code: 'FORBIDDEN' });
+          }
+          
+          const { id, ...data } = input;
+          await db.updateActivity(id, data);
+          return { success: true };
+        }),
+
+      delete: protectedProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(async ({ ctx, input }) => {
+          const authHeader = ctx.req.headers.authorization;
+          if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+          
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+          const user = await db.getUserById(decoded.userId);
+          
+          if (!user || user.role !== 'admin') {
+            throw new TRPCError({ code: 'FORBIDDEN' });
+          }
+          
+          await db.deleteActivity(input.id);
+          return { success: true };
+        }),
+    }),
   }),
 });
 
