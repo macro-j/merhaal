@@ -35,6 +35,16 @@ export default function Home() {
       description: 'مدينة ساحلية بموروث عريق مع كورنيش ساحر وتراث إسلامي',
       descriptionEn: 'A coastal city with rich heritage, charming corniche and Islamic heritage',
       image: '/images/cities/jeddah-hero.jpg'
+    },
+    {
+      id: 'الطائف',
+      name: 'الطائف',
+      nameEn: 'Taif',
+      subtitle: 'مدينة الورد',
+      subtitleEn: 'City of Roses',
+      description: 'مصيف الجزيرة العربية بجبالها الخضراء وأجوائها المعتدلة وحدائق الورد',
+      descriptionEn: 'Summer resort of Arabia with green mountains, mild weather and rose gardens',
+      image: '/images/cities/taif-hero.jpg'
     }
   ];
 

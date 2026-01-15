@@ -45,7 +45,7 @@ export function CityDetailModal({ cityId, isOpen, onClose, language }: CityDetai
             {/* Header Image */}
             <div className="relative h-64 md:h-96">
               <img
-                src={destination.images?.[0] || '/cities/default.jpg'}
+                src={destination.images?.[0] || '/images/cities/riyadh-hero.jpg'}
                 alt={language === 'ar' ? destination.nameAr : destination.nameEn}
                 className="w-full h-full object-cover"
               />
