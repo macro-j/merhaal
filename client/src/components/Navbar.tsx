@@ -56,7 +56,7 @@ export function Navbar() {
             className="flex items-center"
           >
             <img 
-              src="/logo.png" 
+              src="/logo.jpg" 
               alt="مرحال" 
               className="h-8 md:h-9 w-auto"
             />
