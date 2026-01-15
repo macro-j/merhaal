@@ -53,9 +53,13 @@ export function Navbar() {
         <div className="flex items-center justify-between h-14 md:h-16">
           <a 
             href="/" 
-            className="text-xl md:text-2xl font-bold text-primary"
+            className="flex items-center"
           >
-            مرحال
+            <img 
+              src="/logo.png" 
+              alt="مرحال" 
+              className="h-8 md:h-9 w-auto"
+            />
           </a>
 
           <div className="hidden md:flex items-center gap-1">
