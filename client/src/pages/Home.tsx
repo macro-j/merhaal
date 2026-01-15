@@ -2,9 +2,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useInView } from "@/hooks/useInView";
 import { Button } from "@/components/ui/button";
 import { CityDetailModal } from "@/components/CityDetailModal";
-import { Calendar, Settings, Sparkles, Globe, Users, Share2 } from "lucide-react";
+import { Calendar, Settings, Sparkles, Globe, Users, Share2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Home() {
@@ -14,6 +14,17 @@ export default function Home() {
   
   const { ref: destinationsRef, isInView: destinationsInView } = useInView();
   const { ref: featuresRef, isInView: featuresInView } = useInView();
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  const scrollCarousel = useCallback((direction: 'left' | 'right') => {
+    if (!carouselRef.current) return;
+    const scrollAmount = 340;
+    const currentScroll = carouselRef.current.scrollLeft;
+    const newScroll = direction === 'right' 
+      ? currentScroll + scrollAmount 
+      : currentScroll - scrollAmount;
+    carouselRef.current.scrollTo({ left: newScroll, behavior: 'smooth' });
+  }, []);
 
   const destinations = [
     {
@@ -202,35 +213,58 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="flex gap-4 md:gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 px-4 md:px-8 hide-scrollbar">
-            {destinations.map((dest, index) => (
-              <button 
-                key={index}
-                onClick={() => setSelectedCity(dest.id)}
-                className="group relative flex-shrink-0 w-[280px] md:w-[320px] lg:w-[340px] snap-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-2xl card-hover"
-              >
-                <div className="aspect-[4/5] relative overflow-hidden rounded-2xl">
-                  <img 
-                    src={dest.image} 
-                    alt={language === 'ar' ? dest.name : dest.nameEn}
-                    className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500 ease-out"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
-                  
-                  <div className="absolute bottom-0 left-0 right-0 p-5 md:p-6 text-white text-start">
-                    <h3 className="text-xl md:text-2xl font-semibold mb-1">
-                      {language === 'ar' ? dest.name : dest.nameEn}
-                    </h3>
-                    <p className="text-sm text-white/80 mb-4 leading-relaxed">
-                      {language === 'ar' ? dest.subtitle : dest.subtitleEn}
-                    </p>
-                    <span className="inline-flex items-center justify-center h-11 px-6 bg-white/95 text-primary font-medium text-sm rounded-full shadow-sm group-hover:bg-white transition-colors">
-                      {t.explore}
-                    </span>
+          <div className="relative group/carousel">
+            <div 
+              ref={carouselRef}
+              className="flex gap-4 md:gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 px-4 md:px-12 lg:px-16 hide-scrollbar motion-reduce:scroll-auto"
+            >
+              {destinations.map((dest, index) => (
+                <button 
+                  key={index}
+                  onClick={() => setSelectedCity(dest.id)}
+                  className="group relative flex-shrink-0 w-[280px] md:w-[320px] lg:w-[340px] snap-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-2xl card-hover"
+                >
+                  <div className="aspect-[4/5] relative overflow-hidden rounded-2xl">
+                    <img 
+                      src={dest.image} 
+                      alt={language === 'ar' ? dest.name : dest.nameEn}
+                      className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500 ease-out"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+                    
+                    <div className="absolute bottom-0 left-0 right-0 p-5 md:p-6 text-white text-start">
+                      <h3 className="text-xl md:text-2xl font-semibold mb-1">
+                        {language === 'ar' ? dest.name : dest.nameEn}
+                      </h3>
+                      <p className="text-sm text-white/80 mb-4 leading-relaxed">
+                        {language === 'ar' ? dest.subtitle : dest.subtitleEn}
+                      </p>
+                      <span className="inline-flex items-center justify-center h-11 px-6 bg-white/95 text-primary font-medium text-sm rounded-full shadow-sm group-hover:bg-white transition-colors">
+                        {t.explore}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              ))}
+            </div>
+
+            <div className="hidden md:block absolute inset-y-0 left-0 w-12 lg:w-16 bg-gradient-to-r from-secondary/30 to-transparent pointer-events-none z-10"></div>
+            <div className="hidden md:block absolute inset-y-0 right-0 w-12 lg:w-16 bg-gradient-to-l from-secondary/30 to-transparent pointer-events-none z-10"></div>
+
+            <button
+              onClick={() => scrollCarousel(isRTL ? 'right' : 'left')}
+              className="hidden md:flex absolute top-1/2 -translate-y-1/2 start-2 lg:start-4 z-20 w-10 h-10 items-center justify-center rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-sm text-foreground/70 opacity-0 group-hover/carousel:opacity-100 hover:bg-background hover:text-foreground transition-all duration-200 motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              aria-label={isRTL ? 'التالي' : 'Previous'}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => scrollCarousel(isRTL ? 'left' : 'right')}
+              className="hidden md:flex absolute top-1/2 -translate-y-1/2 end-2 lg:end-4 z-20 w-10 h-10 items-center justify-center rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-sm text-foreground/70 opacity-0 group-hover/carousel:opacity-100 hover:bg-background hover:text-foreground transition-all duration-200 motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              aria-label={isRTL ? 'السابق' : 'Next'}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </section>
