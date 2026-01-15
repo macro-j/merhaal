@@ -218,13 +218,13 @@ export default function Home() {
           <div className="relative group/carousel">
             <div 
               ref={carouselRef}
-              className="flex gap-4 md:gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 px-4 md:px-12 lg:px-16 hide-scrollbar motion-reduce:scroll-auto"
+              className="flex gap-3 md:gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 px-[4%] md:px-12 lg:px-16 hide-scrollbar motion-reduce:scroll-auto"
             >
               {destinations.map((dest, index) => (
                 <button 
                   key={index}
                   onClick={() => setSelectedCity(dest.id)}
-                  className="group relative flex-shrink-0 w-[280px] md:w-[320px] lg:w-[340px] snap-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-2xl card-hover"
+                  className="group relative flex-shrink-0 w-[92vw] md:w-[320px] lg:w-[340px] snap-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-2xl card-hover"
                 >
                   <div className="aspect-[4/5] relative overflow-hidden rounded-2xl">
                     <img 
