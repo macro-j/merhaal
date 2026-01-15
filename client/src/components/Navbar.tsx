@@ -46,7 +46,7 @@ export function Navbar() {
 
   return (
     <nav 
-      className="fixed top-0 inset-x-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-800/50"
+      className="fixed top-0 inset-x-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-[0_1px_0_0_rgba(0,0,0,0.04)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)]"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <div className="container mx-auto px-4">
