@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { CityDetailModal } from "@/components/CityDetailModal";
 import { Calendar, Settings, Sparkles, Globe, Users, Share2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Home() {
@@ -15,6 +15,44 @@ export default function Home() {
   const { ref: destinationsRef, isInView: destinationsInView } = useInView();
   const { ref: featuresRef, isInView: featuresInView } = useInView();
   const carouselRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const hasShownHint = useRef(false);
+
+  useEffect(() => {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+
+    const handleScroll = () => {
+      const scrollLeft = carousel.scrollLeft;
+      const cardWidth = carousel.offsetWidth * 0.92;
+      const gap = 12;
+      const index = Math.round(scrollLeft / (cardWidth + gap));
+      setActiveIndex(Math.max(0, Math.min(index, 4)));
+    };
+
+    carousel.addEventListener('scroll', handleScroll, { passive: true });
+    return () => carousel.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!destinationsInView || hasShownHint.current) return;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isMobile = window.innerWidth < 768;
+    if (prefersReducedMotion || !isMobile) return;
+
+    hasShownHint.current = true;
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+
+    const timeout = setTimeout(() => {
+      carousel.scrollTo({ left: 16, behavior: 'smooth' });
+      setTimeout(() => {
+        carousel.scrollTo({ left: 0, behavior: 'smooth' });
+      }, 300);
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [destinationsInView]);
 
   const scrollCarousel = useCallback((direction: 'left' | 'right') => {
     if (!carouselRef.current) return;
@@ -267,6 +305,26 @@ export default function Home() {
             >
               <ChevronRight className="w-5 h-5" />
             </button>
+
+            <div className="flex md:hidden justify-center gap-2 mt-4">
+              {destinations.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    if (!carouselRef.current) return;
+                    const cardWidth = carouselRef.current.offsetWidth * 0.92;
+                    const gap = 12;
+                    carouselRef.current.scrollTo({ left: index * (cardWidth + gap), behavior: 'smooth' });
+                  }}
+                  className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                    activeIndex === index 
+                      ? 'bg-primary w-4' 
+                      : 'bg-foreground/20 hover:bg-foreground/30'
+                  }`}
+                  aria-label={`${language === 'ar' ? 'انتقل إلى' : 'Go to'} ${index + 1}`}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </section>
