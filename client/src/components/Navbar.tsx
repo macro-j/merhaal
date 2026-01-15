@@ -46,7 +46,7 @@ export function Navbar() {
 
   return (
     <nav 
-      className="fixed top-0 inset-x-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-[0_1px_0_0_rgba(0,0,0,0.04)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)]"
+      className="fixed top-0 inset-x-0 z-50 bg-background/80 backdrop-blur-md border-b border-border"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <div className="container mx-auto px-4">
@@ -71,7 +71,7 @@ export function Navbar() {
                   "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
                   isActive(link.href)
                     ? "text-primary bg-primary/10"
-                    : "text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-primary/5"
+                    : "text-muted-foreground hover:text-primary hover:bg-primary/5"
                 )}
               >
                 {language === "ar" ? link.labelAr : link.labelEn}
@@ -148,7 +148,7 @@ export function Navbar() {
           className="w-[85vw] max-w-sm p-0"
           style={{ paddingTop: "env(safe-area-inset-top)" }}
         >
-          <SheetHeader className="p-6 pb-4 border-b border-gray-100 dark:border-gray-800">
+          <SheetHeader className="p-6 pb-4 border-b border-border">
             <SheetTitle className="text-xl font-bold text-primary text-start">
               مرحال
             </SheetTitle>
@@ -163,7 +163,7 @@ export function Navbar() {
                   "w-full px-4 py-3.5 rounded-xl text-base font-medium text-start transition-colors min-h-[44px]",
                   isActive(link.href)
                     ? "text-primary bg-primary/10"
-                    : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    : "text-foreground hover:bg-muted"
                 )}
               >
                 {language === "ar" ? link.labelAr : link.labelEn}
@@ -171,7 +171,7 @@ export function Navbar() {
             ))}
           </div>
 
-          <div className="border-t border-gray-100 dark:border-gray-800 p-4 mt-auto">
+          <div className="border-t border-border p-4 mt-auto">
             <div className="flex items-center gap-3 mb-4">
               <Button
                 variant="outline"
