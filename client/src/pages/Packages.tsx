@@ -16,68 +16,62 @@ export default function Packages() {
 
   const packages = [
     {
-      id: "free",
-      name: "مجاني",
-      nameEn: "Free",
-      price: 0,
-      period: "دائماً",
-      periodEn: "Forever",
+      id: "basic",
+      name: "أساسي",
+      nameEn: "Basic",
+      title: "ابدأ رحلتك بسهولة",
+      titleEn: "Start your journey easily",
+      description: "مناسب لمن يريد خطة سريعة وواضحة دون تعقيد.",
+      descriptionEn: "Perfect for those who want a quick and clear plan without complexity.",
       features: [
-        { text: "رحلة واحدة (يوم واحد)", textEn: "One trip (one day)", included: true },
-        { text: "3 أنشطة في اليوم", textEn: "3 activities per day", included: true },
-        { text: "معاينة النظام", textEn: "System preview", included: true },
+        { text: "إنشاء خطة رحلة واحدة", textEn: "Create one trip plan" },
+        { text: "اقتراحات لأشهر الأماكن والمطاعم", textEn: "Suggestions for popular places and restaurants" },
+        { text: "مدة رحلة قصيرة", textEn: "Short trip duration" },
+        { text: "تجربة بسيطة وسريعة", textEn: "Simple and fast experience" },
       ],
     },
     {
-      id: "smart",
-      name: "ذكي",
-      nameEn: "Smart",
-      price: 14.99,
-      period: "دفعة واحدة",
-      periodEn: "One-time",
-      recommended: true,
+      id: "advanced",
+      name: "متقدم",
+      nameEn: "Advanced",
+      title: "خطط رحلتك بطريقتك",
+      titleEn: "Plan your trip your way",
+      description: "تحكم أكبر وتخصيص أوسع لرحلتك.",
+      descriptionEn: "More control and wider customization for your trip.",
       features: [
-        { text: "رحلات حتى 10 أيام", textEn: "Trips up to 10 days", included: true },
-        { text: "5 أنشطة في اليوم", textEn: "5 activities per day", included: true },
-        { text: "حفظ 3 خطط رحلات", textEn: "Save 3 trip plans", included: true },
-        { text: "التخطيط الذكي", textEn: "Smart planning", included: true },
-        { text: "فلاتر متقدمة", textEn: "Advanced filters", included: true },
+        { text: "إنشاء عدة خطط", textEn: "Create multiple plans" },
+        { text: "تخصيص حسب الميزانية ونوع الرحلة", textEn: "Customize by budget and trip type" },
+        { text: "حفظ الخطط والعودة لها لاحقًا", textEn: "Save plans and return to them later" },
+        { text: "إعادة توليد الخطة عند الحاجة", textEn: "Regenerate the plan when needed" },
       ],
     },
     {
-      id: "pro",
-      name: "احترافي",
-      nameEn: "Professional",
-      price: 29.99,
-      period: "شهرياً",
-      periodEn: "Monthly",
+      id: "premium",
+      name: "بريميوم",
+      nameEn: "Premium",
+      title: "التجربة الكاملة لرحلة مثالية",
+      titleEn: "The complete experience for a perfect trip",
+      description: "أقصى درجات التخصيص والراحة.",
+      descriptionEn: "Maximum customization and comfort.",
       features: [
-        { text: "رحلات حتى 14 يوماً", textEn: "Trips up to 14 days", included: true },
-        { text: "أنشطة غير محدودة", textEn: "Unlimited activities", included: true },
-        { text: "حفظ غير محدود", textEn: "Unlimited saves", included: true },
-        { text: "حجز مباشر", textEn: "Direct booking", included: true },
-        { text: "مرشدون سياحيون", textEn: "Tour guides", included: true },
-        { text: "دعم أولوية", textEn: "Priority support", included: true },
+        { text: "تخصيص ذكي متقدم حسب الوقت والاهتمامات", textEn: "Advanced smart customization by time and interests" },
+        { text: "اقتراحات أماكن فريدة وغير تقليدية", textEn: "Unique and unconventional place suggestions" },
+        { text: "حفظ غير محدود للخطط", textEn: "Unlimited plan saves" },
+        { text: "أولوية الوصول للمميزات الجديدة والمدن القادمة", textEn: "Priority access to new features and upcoming cities" },
       ],
     },
   ];
 
   const content = {
     ar: {
-      title: "اختر باقتك",
-      subtitle: "ابدأ مجاناً، ثم قم بالترقية حسب احتياجاتك",
-      recommended: "موصى به",
-      selectBtn: "اختر",
-      currentPlan: "الباقة الحالية",
-      currency: "ريال",
+      title: "الباقات",
+      subtitle: "اختر الباقة المناسبة لاحتياجاتك",
+      selectBtn: "اختر الباقة",
     },
     en: {
-      title: "Choose Your Plan",
-      subtitle: "Start free, then upgrade as you need",
-      recommended: "Recommended",
-      selectBtn: "Select",
-      currentPlan: "Current Plan",
-      currency: "SAR",
+      title: "Plans",
+      subtitle: "Choose the plan that fits your needs",
+      selectBtn: "Select Plan",
     }
   };
 
@@ -104,48 +98,31 @@ export default function Packages() {
             </p>
           </div>
 
-          <div className="flex flex-col md:flex-row gap-4 md:gap-6 max-w-4xl mx-auto">
+          <div className="flex flex-col md:flex-row gap-5 md:gap-6 max-w-5xl mx-auto">
             {packages.map((pkg) => (
               <div
                 key={pkg.id}
-                className={`flex-1 relative rounded-2xl p-6 md:p-8 transition-all duration-300 ${
-                  pkg.recommended 
-                    ? "bg-card border-2 border-accent shadow-lg ring-1 ring-accent/20" 
-                    : "bg-card border border-border"
-                }`}
+                className="flex-1 bg-card border border-border/60 rounded-2xl p-6 md:p-8 flex flex-col"
               >
-                {pkg.recommended && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="bg-accent text-accent-foreground text-xs font-medium px-3 py-1 rounded-full">
-                      {t.recommended}
-                    </span>
-                  </div>
-                )}
-
-                <div className="text-center mb-6">
-                  <h3 className="text-xl font-semibold text-foreground mb-2">
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-1">
                     {language === 'ar' ? pkg.name : pkg.nameEn}
                   </h3>
-                  <div className="flex items-baseline justify-center gap-1">
-                    <span className="text-4xl font-bold text-foreground">
-                      {pkg.price === 0 ? (language === 'ar' ? 'مجاني' : 'Free') : pkg.price}
-                    </span>
-                    {pkg.price > 0 && (
-                      <span className="text-muted-foreground text-sm">{t.currency}</span>
-                    )}
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {language === 'ar' ? pkg.period : pkg.periodEn}
+                  <p className="text-base font-medium text-primary mb-2">
+                    {language === 'ar' ? pkg.title : pkg.titleEn}
+                  </p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {language === 'ar' ? pkg.description : pkg.descriptionEn}
                   </p>
                 </div>
 
-                <ul className="space-y-3 mb-8">
+                <ul className="space-y-3 mb-8 flex-1">
                   {pkg.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-center gap-3">
-                      <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <li key={idx} className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                         <Check className="w-3 h-3 text-primary" />
                       </div>
-                      <span className="text-sm text-foreground">
+                      <span className="text-sm text-foreground leading-relaxed">
                         {language === 'ar' ? feature.text : feature.textEn}
                       </span>
                     </li>
@@ -154,16 +131,9 @@ export default function Packages() {
 
                 <Button
                   onClick={() => handleSelectPackage(language === 'ar' ? pkg.name : pkg.nameEn)}
-                  disabled={pkg.price === 0}
-                  className={`w-full h-12 rounded-full text-base font-medium ${
-                    pkg.recommended
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                      : pkg.price === 0
-                        ? "bg-muted text-muted-foreground cursor-not-allowed"
-                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                  }`}
+                  className="w-full h-12 rounded-full text-base font-medium bg-primary text-primary-foreground hover:bg-primary/90"
                 >
-                  {pkg.price === 0 ? t.currentPlan : t.selectBtn}
+                  {t.selectBtn}
                 </Button>
               </div>
             ))}
