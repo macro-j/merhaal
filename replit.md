@@ -39,7 +39,25 @@ A full-stack trip planning application for Saudi Arabia featuring destination gu
 - `PORT`: Server port (default: 5000)
 - Optional: `VITE_APP_TITLE`, `VITE_APP_LOGO`, `VITE_ANALYTICS_ENDPOINT`
 
+## User Tier System
+- **Free**: 1 day max, 3 activities, 1 saved trip
+- **Smart**: 10 days max, 5 activities, 3 saved trips
+- **Professional**: Unlimited days, activities, and trips
+
+## Admin Dashboard
+- Located at `/admin` (admin role required)
+- Manage cities: `/admin/cities`
+- Manage activities/places: `/admin/activities`
+- Manage users (tier/role updates): `/admin/users`
+
 ## Recent Changes
+- 2026-01-15: Added MVP backend + admin dashboard
+  - Admin CRUD routes for cities, activities, and users
+  - Admin dashboard UI (AdminLayout, AdminDashboard, AdminCities, AdminActivities, AdminUsers)
+  - Tier-based trip limits enforcement (day limits, saved plan limits)
+  - MyPlans page for viewing saved trips
+  - Role-aware navigation (admin link for admins)
+  - DashboardLayout with dynamic menu items
 - 2026-01-13: Configured for Replit environment
   - Updated Vite to allow all hosts for proxy access
   - Set default port to 5000
