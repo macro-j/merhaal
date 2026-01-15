@@ -18,7 +18,9 @@ export default function Home() {
 
   const scrollCarousel = useCallback((direction: 'left' | 'right') => {
     if (!carouselRef.current) return;
-    const scrollAmount = 340;
+    const cardWidth = 340;
+    const gap = 24;
+    const scrollAmount = cardWidth + gap;
     const currentScroll = carouselRef.current.scrollLeft;
     const newScroll = direction === 'right' 
       ? currentScroll + scrollAmount 
