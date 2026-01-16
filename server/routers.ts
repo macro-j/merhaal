@@ -280,21 +280,40 @@ export const appRouter = router({
           else if (userTier === 'free' && activityTier === 'free') tierAllowed = true;
 
           const activityCost = parseFloat(activity.cost || '0');
+          const activityBudgetLevel = activity.budgetLevel || 'medium';
           let budgetAllowed = true;
           if (qualityLevel === 'اقتصادية') {
-            budgetAllowed = activityCost === 0;
+            budgetAllowed = activityCost === 0 || activityBudgetLevel === 'low';
           } else if (qualityLevel === 'متوسطة') {
-            budgetAllowed = activityCost <= 100;
+            budgetAllowed = activityCost <= 100 || activityBudgetLevel !== 'high';
           }
 
           return tierAllowed && budgetAllowed;
         });
 
-        // Filter by interests if provided
+        // Filter by interests if provided (match against type, category, and tags)
         if (input.interests.length > 0) {
-          const interestFiltered = filteredActivities.filter(activity =>
-            input.interests.some(interest => activity.type.includes(interest))
-          );
+          const categoryMap: { [key: string]: string[] } = {
+            'مطاعم': ['طعام', 'مطاعم', 'food'],
+            'تسوق': ['تسوق', 'shopping'],
+            'طبيعة': ['طبيعة', 'nature', 'منتزهات'],
+            'ثقافة': ['ثقافة', 'culture', 'متاحف', 'تراث'],
+            'مغامرات': ['مغامرات', 'adventure', 'رياضة'],
+            'ترفيه': ['ترفيه', 'entertainment'],
+            'عائلي': ['عائلي', 'family'],
+          };
+          
+          const interestFiltered = filteredActivities.filter(activity => {
+            const activityTags = activity.tags || [];
+            return input.interests.some(interest => {
+              const relatedTerms = categoryMap[interest] || [interest];
+              return relatedTerms.some(term =>
+                activity.type?.includes(term) ||
+                activity.category?.includes(term) ||
+                activityTags.some((tag: string) => tag.includes(term))
+              );
+            });
+          });
           if (interestFiltered.length >= input.days * 2) {
             filteredActivities = interestFiltered;
           }
@@ -329,37 +348,78 @@ export const appRouter = router({
           }
         }
 
-        // Shuffle activities
-        const shuffled = [...filteredActivities].sort(() => Math.random() - 0.5);
+        // Smart activity scheduling using bestTimeOfDay metadata
+        const timeSlots = [
+          { time: '09:00', period: 'صباحًا', slot: 'morning' },
+          { time: '12:00', period: 'ظهرًا', slot: 'afternoon' },
+          { time: '15:00', period: 'عصرًا', slot: 'afternoon' },
+          { time: '18:00', period: 'مساءً', slot: 'evening' },
+        ];
+        
+        // Group activities by best time of day for smarter scheduling
+        const morningActivities = filteredActivities.filter(a => a.bestTimeOfDay === 'morning');
+        const afternoonActivities = filteredActivities.filter(a => a.bestTimeOfDay === 'afternoon');
+        const eveningActivities = filteredActivities.filter(a => a.bestTimeOfDay === 'evening');
+        const anytimeActivities = filteredActivities.filter(a => !a.bestTimeOfDay || a.bestTimeOfDay === 'anytime');
+        
+        // Shuffle each group
+        const shuffleFn = (arr: any[]) => [...arr].sort(() => Math.random() - 0.5);
+        const shuffledMorning = shuffleFn(morningActivities);
+        const shuffledAfternoon = shuffleFn(afternoonActivities);
+        const shuffledEvening = shuffleFn(eveningActivities);
+        const shuffledAnytime = shuffleFn(anytimeActivities);
 
         // Generate daily plan
         const plan = [];
-        const timeSlots = [
-          { time: '09:00', period: 'صباحًا' },
-          { time: '12:00', period: 'ظهرًا' },
-          { time: '15:00', period: 'عصرًا' },
-          { time: '18:00', period: 'مساءً' },
-        ];
         const dayTitles = ['اليوم الأول', 'اليوم الثاني', 'اليوم الثالث', 'اليوم الرابع', 'اليوم الخامس', 'اليوم السادس', 'اليوم السابع', 'اليوم الثامن', 'اليوم التاسع', 'اليوم العاشر'];
+        
         // Enforce tier-based activity limit per day (minimum 3, maximum based on tier)
         const minActivitiesPerDay = 3;
         const maxActivitiesPerDay = Math.max(minActivitiesPerDay, Math.min(limits.maxActivitiesPerDay, 4));
+        
+        // Track used activities to avoid repetition
+        const usedActivityIds = new Set<number>();
+        
+        const pickActivity = (preferred: any[], fallback: any[]) => {
+          let activity = preferred.find(a => !usedActivityIds.has(a.id));
+          if (!activity) {
+            activity = fallback.find(a => !usedActivityIds.has(a.id));
+          }
+          if (!activity) {
+            activity = filteredActivities.find(a => !usedActivityIds.has(a.id));
+          }
+          if (activity) usedActivityIds.add(activity.id);
+          return activity;
+        };
 
         for (let day = 1; day <= input.days; day++) {
           const dayActivities = [];
-          const startIdx = (day - 1) * maxActivitiesPerDay;
           
-          for (let i = 0; i < maxActivitiesPerDay && startIdx + i < shuffled.length; i++) {
-            const activity = shuffled[startIdx + i];
+          for (let i = 0; i < maxActivitiesPerDay; i++) {
             const slot = timeSlots[i] || timeSlots[0];
+            let activity;
+            
+            // Match activity to time slot based on bestTimeOfDay
+            if (slot.slot === 'morning') {
+              activity = pickActivity(shuffledMorning, shuffledAnytime);
+            } else if (slot.slot === 'afternoon') {
+              activity = pickActivity(shuffledAfternoon, shuffledAnytime);
+            } else {
+              activity = pickActivity(shuffledEvening, shuffledAnytime);
+            }
+            
+            if (!activity) continue;
+            
             dayActivities.push({
               time: slot.time,
               period: slot.period,
               activity: activity.name,
               description: activity.details || `استمتع بـ${activity.name} في ${destination.nameAr}`,
               type: activity.type,
+              category: activity.category,
               duration: activity.duration || '2 ساعة',
               cost: activity.cost,
+              budgetLevel: activity.budgetLevel,
             });
           }
 

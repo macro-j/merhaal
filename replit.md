@@ -62,6 +62,66 @@ A full-stack trip planning application for Saudi Arabia featuring destination gu
 - Time blocks: صباحًا (09:00), ظهرًا (12:00), عصرًا (15:00), مساءً (18:00)
 - Activities strictly from selected city via destinationId
 - Tier-enforced activity limits per day
+- Smart scheduling: activities assigned to time slots based on `bestTimeOfDay` metadata
+
+## Activity Metadata
+Activities support enhanced metadata for smarter trip planning:
+- **category**: مطاعم, تراث, طبيعة, تسوق, مغامرات, عائلي, ثقافة, ترفيه
+- **tags**: Array of additional keywords for flexible matching
+- **budgetLevel**: low, medium, high
+- **bestTimeOfDay**: morning, afternoon, evening, anytime
+
+## Data Seeding (Excel/CSV Schema)
+
+### Activities CSV Columns:
+| Column | Type | Required | Description |
+|--------|------|----------|-------------|
+| destinationId | integer | Yes | City/destination ID |
+| name | text | Yes | Arabic activity name |
+| nameEn | text | No | English name |
+| type | text | Yes | Activity type (طعام, تسوق, سياحة, etc.) |
+| category | text | No | مطاعم/تراث/طبيعة/تسوق/مغامرات/عائلي/ثقافة/ترفيه |
+| tags | text | No | Comma-separated keywords |
+| details | text | No | Arabic description |
+| detailsEn | text | No | English description |
+| duration | text | No | e.g., "2 ساعة" |
+| cost | text | No | Price in SAR |
+| budgetLevel | text | No | low/medium/high |
+| bestTimeOfDay | text | No | morning/afternoon/evening/anytime |
+| minTier | text | No | free/smart/professional |
+| isActive | boolean | No | Default: true |
+
+### Accommodations CSV Columns:
+| Column | Type | Required | Description |
+|--------|------|----------|-------------|
+| destinationId | integer | Yes | City/destination ID |
+| nameAr | text | Yes | Arabic name |
+| nameEn | text | No | English name |
+| descriptionAr | text | No | Arabic description |
+| descriptionEn | text | No | English description |
+| class | text | Yes | economy/mid/luxury |
+| priceRange | text | No | e.g., "300-500 ريال/ليلة" |
+| googlePlaceId | text | No | Google Places ID |
+| googleMapsUrl | text | No | Direct maps URL |
+| rating | decimal | No | 0-5 rating |
+| isActive | boolean | No | Default: true |
+
+### Destinations CSV Columns:
+| Column | Type | Required | Description |
+|--------|------|----------|-------------|
+| nameAr | text | Yes | Arabic city name |
+| nameEn | text | No | English city name |
+| description | text | No | Arabic description |
+| descriptionEn | text | No | English description |
+| image | text | No | Image URL |
+| region | text | No | Region name |
+| isActive | boolean | No | Default: true |
+
+## Share Plan Feature
+- Smart and Professional tier users can generate shareable URLs
+- Token-based authentication using crypto.randomBytes(32)
+- Public route: `/shared/:token` displays trip without auth
+- Trip owners can cancel sharing anytime
 
 ## Recent Changes
 - 2026-01-16: Admin Accommodations Management
