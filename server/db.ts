@@ -48,6 +48,25 @@ export async function updateUserLastSignIn(userId: number) {
   await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, userId));
 }
 
+export async function seedAdminIfNeeded() {
+  const db = await getDb();
+  if (!db) return;
+  
+  try {
+    const allUsers = await db.select().from(users).limit(10);
+    if (allUsers.length === 0) return;
+    
+    const hasAdmin = allUsers.some(u => u.role === 'admin');
+    if (!hasAdmin) {
+      const firstUser = allUsers[0];
+      await db.update(users).set({ role: 'admin' }).where(eq(users.id, firstUser.id));
+      console.log(`[Admin Seed] Promoted user ${firstUser.email} to admin role`);
+    }
+  } catch (error) {
+    console.warn('[Admin Seed] Could not check/seed admin:', error);
+  }
+}
+
 // Destinations
 export async function getAllDestinations() {
   const db = await getDb();

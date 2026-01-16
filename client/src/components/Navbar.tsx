@@ -130,21 +130,12 @@ export function Navbar() {
                   </Button>
                 </div>
               ) : (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => (window.location.href = "/login")}
-                  >
-                    {language === "ar" ? "دخول" : "Sign In"}
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => (window.location.href = "/register")}
-                  >
-                    {language === "ar" ? "تسجيل الدخول" : "Get Started"}
-                  </Button>
-                </>
+                <Button
+                  size="sm"
+                  onClick={() => (window.location.href = "/login")}
+                >
+                  {language === "ar" ? "تسجيل الدخول" : "Sign In"}
+                </Button>
               )}
             </div>
 
@@ -240,21 +231,12 @@ export function Navbar() {
                 </Button>
               </div>
             ) : (
-              <div className="flex flex-col gap-2">
-                <Button
-                  className="w-full h-12"
-                  onClick={() => handleNavClick("/register")}
-                >
-                  {language === "ar" ? "تسجيل الدخول" : "Get Started"}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full h-12"
-                  onClick={() => handleNavClick("/login")}
-                >
-                  {language === "ar" ? "تسجيل الدخول" : "Sign In"}
-                </Button>
-              </div>
+              <Button
+                className="w-full h-12"
+                onClick={() => handleNavClick("/login")}
+              >
+                {language === "ar" ? "تسجيل الدخول" : "Sign In"}
+              </Button>
             )}
           </div>
         </SheetContent>
