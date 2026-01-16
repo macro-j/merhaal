@@ -3,6 +3,7 @@ import { integer, pgEnum, pgTable, text, timestamp, varchar, json, decimal, bool
 export const roleEnum = pgEnum("role", ["user", "admin"]);
 export const tierEnum = pgEnum("tier", ["free", "smart", "professional"]);
 export const accommodationTypeEnum = pgEnum("accommodation_type", ["فاخر", "متوسط", "اقتصادي", "شقق مفروشة", "استراحات"]);
+export const accommodationClassEnum = pgEnum("accommodation_class", ["economy", "mid", "luxury"]);
 export const priceRangeEnum = pgEnum("price_range", ["فاخر", "متوسط", "اقتصادي"]);
 export const itemTypeEnum = pgEnum("item_type", ["destination", "activity", "accommodation", "restaurant"]);
 
@@ -62,13 +63,18 @@ export type InsertActivity = typeof activities.$inferInsert;
 export const accommodations = pgTable("accommodations", {
   id: serial("id").primaryKey(),
   destinationId: integer("destination_id").notNull(),
-  name: varchar("name", { length: 200 }).notNull(),
-  type: accommodationTypeEnum("type").notNull(),
-  pricePerNight: decimal("price_per_night", { precision: 10, scale: 2 }).notNull(),
+  nameAr: varchar("name_ar", { length: 200 }).notNull(),
+  nameEn: varchar("name_en", { length: 200 }),
+  descriptionAr: text("description_ar"),
+  descriptionEn: text("description_en"),
+  class: accommodationClassEnum("class").default("mid").notNull(),
+  priceRange: varchar("price_range", { length: 100 }),
+  googlePlaceId: varchar("google_place_id", { length: 300 }),
+  googleMapsUrl: varchar("google_maps_url", { length: 500 }),
   rating: decimal("rating", { precision: 2, scale: 1 }),
-  link: varchar("link", { length: 500 }),
-  features: json("features").$type<string[]>(),
+  isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export type Accommodation = typeof accommodations.$inferSelect;

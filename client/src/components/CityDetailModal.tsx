@@ -139,15 +139,19 @@ export function CityDetailModal({ cityId, isOpen, onClose, language }: CityDetai
                     {hotels.map((hotel) => (
                       <div key={hotel.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                         <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-semibold">{hotel.name}</h4>
+                          <h4 className="font-semibold">{language === 'ar' ? hotel.nameAr : (hotel.nameEn || hotel.nameAr)}</h4>
                           {hotel.rating && <span className="text-yellow-500">★ {hotel.rating}</span>}
                         </div>
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                          {hotel.type}
+                          {hotel.class === 'luxury' ? (language === 'ar' ? 'فاخر' : 'Luxury') : 
+                           hotel.class === 'mid' ? (language === 'ar' ? 'متوسط' : 'Mid-range') : 
+                           (language === 'ar' ? 'اقتصادي' : 'Economy')}
                         </p>
-                        <p className="text-purple-600 dark:text-purple-400 font-medium">
-                          {language === 'ar' ? 'من' : 'From'} {hotel.pricePerNight} {language === 'ar' ? 'ريال/ليلة' : 'SAR/night'}
-                        </p>
+                        {hotel.priceRange && (
+                          <p className="text-purple-600 dark:text-purple-400 font-medium">
+                            {hotel.priceRange}
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>
