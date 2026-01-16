@@ -91,12 +91,17 @@ router.get("/plans/:id/pdf", async (req: Request, res: Response) => {
       doc.setFontSize(10);
       doc.text(plan.accommodation.name || "", rightMargin - 10, y, { align: "right" });
       y += 6;
-      doc.text(
-        `${plan.accommodation.type || ""} | ${plan.accommodation.pricePerNight || ""} ريال/ليلة`,
-        rightMargin - 10,
-        y,
-        { align: "right" }
-      );
+      const classLabel = plan.accommodation.class === 'luxury' ? 'فاخر' : 
+                         plan.accommodation.class === 'mid' ? 'متوسط' : 'اقتصادي';
+      const priceInfo = plan.accommodation.priceRange ? ` | ${plan.accommodation.priceRange}` : '';
+      doc.text(`${classLabel}${priceInfo}`, rightMargin - 10, y, { align: "right" });
+      y += 15;
+    } else if (plan?.noAccommodationMessage) {
+      doc.setFontSize(13);
+      doc.text("الإقامة", rightMargin, y, { align: "right" });
+      y += 8;
+      doc.setFontSize(10);
+      doc.text(plan.noAccommodationMessage, rightMargin - 10, y, { align: "right" });
       y += 15;
     }
 

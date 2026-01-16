@@ -185,7 +185,7 @@ export default function TripDetails() {
           </CardContent>
         </Card>
 
-        {plan?.accommodation && (
+        {plan?.accommodation ? (
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -198,11 +198,13 @@ export default function TripDetails() {
                 <div>
                   <h3 className="font-semibold">{plan.accommodation.name}</h3>
                   <p className="text-sm text-muted-foreground">
-                    {plan.accommodation.type} • {plan.accommodation.pricePerNight} ريال/ليلة
+                    {plan.accommodation.class === 'luxury' ? 'فاخر' : 
+                     plan.accommodation.class === 'mid' ? 'متوسط' : 'اقتصادي'}
+                    {plan.accommodation.priceRange && ` • ${plan.accommodation.priceRange}`}
                   </p>
                 </div>
                 <a
-                  href={getGoogleMapsUrl(plan.accommodation.name, plan.destination)}
+                  href={plan.accommodation.googleMapsUrl || getGoogleMapsUrl(plan.accommodation.name, plan.destination)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary hover:underline flex items-center gap-1 text-sm"
@@ -213,7 +215,21 @@ export default function TripDetails() {
               </div>
             </CardContent>
           </Card>
-        )}
+        ) : plan?.noAccommodationMessage ? (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Hotel className="w-5 h-5 text-muted-foreground" />
+                الإقامة
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground text-center py-2">
+                {plan.noAccommodationMessage}
+              </p>
+            </CardContent>
+          </Card>
+        ) : null}
 
         <div className="space-y-6">
           <h2 className="text-xl font-bold">برنامج الرحلة اليومي</h2>
