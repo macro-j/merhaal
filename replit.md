@@ -48,7 +48,14 @@ A full-stack trip planning application for Saudi Arabia featuring destination gu
 - Located at `/admin` (admin role required)
 - Manage cities: `/admin/cities`
 - Manage activities/places: `/admin/activities`
+- Manage accommodations: `/admin/accommodations`
 - Manage users (tier/role updates): `/admin/users`
+
+## Accommodation System
+- Three-tier classification: economy (اقتصادي), mid (متوسط), luxury (فاخر)
+- Fields: nameAr/nameEn, descriptionAr/descriptionEn, priceRange, googlePlaceId, googleMapsUrl
+- Plan generation matches user's accommodation type preference to class
+- Fallback: Any active accommodation if no class match; shows message if none exist
 
 ## Trip Generation
 - Daily itinerary with Arabic day titles (اليوم الأول, اليوم الثاني, etc.)
@@ -57,6 +64,14 @@ A full-stack trip planning application for Saudi Arabia featuring destination gu
 - Tier-enforced activity limits per day
 
 ## Recent Changes
+- 2026-01-16: Admin Accommodations Management
+  - AdminAccommodations page with city filtering and CRUD (create, edit, delete)
+  - Accommodation class enum: economy (اقتصادي), mid (متوسط), luxury (فاخر)
+  - Fields: nameAr/nameEn, descriptionAr/descriptionEn, priceRange, googlePlaceId, googleMapsUrl
+  - Plan generation matches user's accommodationType to class; fallback to any active if no match
+  - TripDetails shows accommodation class labels, priceRange, and Google Maps links
+  - PDF export includes class label and priceRange; handles noAccommodationMessage gracefully
+  - Hotel icon added to admin navigation sidebar
 - 2026-01-16: Trip Details and Support System
   - TripDetails page (/trip/:id) with header, accommodation card, and daily itinerary breakdown
   - Google Maps search links for all activities and accommodations
