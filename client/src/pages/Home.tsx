@@ -34,6 +34,9 @@ export default function Home() {
     return () => carousel.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const [isHovering, setIsHovering] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+
   useEffect(() => {
     if (!destinationsInView || hasShownHint.current) return;
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -53,6 +56,48 @@ export default function Home() {
 
     return () => clearTimeout(timeout);
   }, [destinationsInView]);
+
+  // Autoplay carousel
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion || isHovering || isDragging) return;
+
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+
+    const interval = setInterval(() => {
+      const isMobile = window.innerWidth < 768;
+      const cardWidth = isMobile ? carousel.offsetWidth * 0.92 : 340;
+      const gap = isMobile ? 12 : 24;
+      const maxScroll = carousel.scrollWidth - carousel.clientWidth;
+      const nextScroll = carousel.scrollLeft + cardWidth + gap;
+      
+      if (nextScroll >= maxScroll) {
+        carousel.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        carousel.scrollTo({ left: nextScroll, behavior: 'smooth' });
+      }
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [isHovering, isDragging]);
+
+  // Handle touch events for pause on drag
+  useEffect(() => {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+
+    const handleTouchStart = () => setIsDragging(true);
+    const handleTouchEnd = () => setTimeout(() => setIsDragging(false), 1000);
+
+    carousel.addEventListener('touchstart', handleTouchStart, { passive: true });
+    carousel.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      carousel.removeEventListener('touchstart', handleTouchStart);
+      carousel.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, []);
 
   const scrollCarousel = useCallback((direction: 'left' | 'right') => {
     if (!carouselRef.current) return;
@@ -230,7 +275,9 @@ export default function Home() {
           </p>
           <Button 
             size="lg" 
-            onClick={() => window.location.href = isAuthenticated ? '/plan-trip' : '/login'}
+            onClick={() => {
+              document.getElementById('destinations')?.scrollIntoView({ behavior: 'smooth' });
+            }}
             className="bg-white text-primary hover:bg-white/90 text-base md:text-lg px-8 py-6 h-14 md:h-16 rounded-full shadow-xl font-semibold min-w-[160px]"
           >
             {t.hero.cta}
@@ -253,7 +300,11 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="relative group/carousel">
+          <div 
+              className="relative group/carousel"
+              onMouseEnter={() => setIsHovering(true)}
+              onMouseLeave={() => setIsHovering(false)}
+            >
             <div 
               ref={carouselRef}
               className="flex gap-3 md:gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 px-[4%] md:px-12 lg:px-16 hide-scrollbar motion-reduce:scroll-auto"
