@@ -357,6 +357,75 @@ export async function getAccommodationById(id: number) {
   return result[0] || null;
 }
 
+export async function getDestinationByExternalId(externalId: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const { destinations } = await import('../drizzle/schema');
+  const result = await db.select().from(destinations).where(eq(destinations.externalId, externalId));
+  return result[0] || null;
+}
+
+export async function getActivityByExternalId(externalId: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const { activities } = await import('../drizzle/schema');
+  const result = await db.select().from(activities).where(eq(activities.externalId, externalId));
+  return result[0] || null;
+}
+
+export async function getAccommodationByExternalId(externalId: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const { accommodations } = await import('../drizzle/schema');
+  const result = await db.select().from(accommodations).where(eq(accommodations.externalId, externalId));
+  return result[0] || null;
+}
+
+export async function createDestinationWithExternalId(externalId: string, data: any) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { destinations } = await import('../drizzle/schema');
+  const result = await db.insert(destinations).values({ externalId, ...data }).returning({ id: destinations.id });
+  return result[0];
+}
+
+export async function updateDestinationByExternalId(externalId: string, data: any) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { destinations } = await import('../drizzle/schema');
+  await db.update(destinations).set({ ...data, updatedAt: new Date() }).where(eq(destinations.externalId, externalId));
+}
+
+export async function createActivityWithExternalId(externalId: string, data: any) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { activities } = await import('../drizzle/schema');
+  const result = await db.insert(activities).values({ externalId, ...data }).returning({ id: activities.id });
+  return result[0];
+}
+
+export async function updateActivityByExternalId(externalId: string, data: any) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { activities } = await import('../drizzle/schema');
+  await db.update(activities).set(data).where(eq(activities.externalId, externalId));
+}
+
+export async function createAccommodationWithExternalId(externalId: string, data: any) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { accommodations } = await import('../drizzle/schema');
+  const result = await db.insert(accommodations).values({ externalId, ...data }).returning({ id: accommodations.id });
+  return result[0];
+}
+
+export async function updateAccommodationByExternalId(externalId: string, data: any) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { accommodations } = await import('../drizzle/schema');
+  await db.update(accommodations).set({ ...data, updatedAt: new Date() }).where(eq(accommodations.externalId, externalId));
+}
+
 export async function createDestinationWithId(id: number, data: any) {
   const db = await getDb();
   if (!db) throw new Error('Database not available');

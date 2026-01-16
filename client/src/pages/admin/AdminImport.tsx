@@ -851,6 +851,17 @@ export default function AdminImport() {
                     </div>
                   )}
                 </div>
+                {((importResults.activities?.missingCities?.length > 0) || (importResults.accommodations?.missingCities?.length > 0)) && (
+                  <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">
+                    <p className="font-medium text-yellow-800">تحذير: بعض السجلات تم تخطيها بسبب عدم وجود مرجع المدينة:</p>
+                    {importResults.activities?.missingCities?.length > 0 && (
+                      <p className="text-yellow-700">الأنشطة - city_id غير موجود: {importResults.activities.missingCities.join(', ')}</p>
+                    )}
+                    {importResults.accommodations?.missingCities?.length > 0 && (
+                      <p className="text-yellow-700">الإقامات - city_id غير موجود: {importResults.accommodations.missingCities.join(', ')}</p>
+                    )}
+                  </div>
+                )}
                 <div className="flex gap-2 mt-3">
                   <Button variant="outline" size="sm" onClick={() => window.location.href = '/admin/cities'}>
                     <Building2 className="w-4 h-4 me-1" /> عرض المدن

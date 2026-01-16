@@ -1067,12 +1067,12 @@ export const appRouter = router({
           let inserted = 0;
           let updated = 0;
           for (const city of input.cities) {
-            const cityId = parseInt(String(city.city_id), 10);
-            const existing = await db.getDestinationById(cityId);
+            const externalId = String(city.city_id).trim();
+            const existing = await db.getDestinationByExternalId(externalId);
             const cityData = {
               nameAr: city.name_ar,
               nameEn: city.name_en || city.name_ar,
-              slug: city.name_ar.toLowerCase().replace(/\s+/g, '-'),
+              slug: externalId.toLowerCase().replace(/\s+/g, '-'),
               titleAr: city.name_ar,
               titleEn: city.name_en || city.name_ar,
               descriptionAr: city.description_ar || '',
@@ -1081,10 +1081,10 @@ export const appRouter = router({
               isActive: city.is_active !== false,
             };
             if (existing) {
-              await db.updateDestination(cityId, cityData);
+              await db.updateDestinationByExternalId(externalId, cityData);
               updated++;
             } else {
-              await db.createDestinationWithId(cityId, cityData);
+              await db.createDestinationWithExternalId(externalId, cityData);
               inserted++;
             }
           }
@@ -1094,14 +1094,22 @@ export const appRouter = router({
         if (input.activities && input.activities.length > 0) {
           let inserted = 0;
           let updated = 0;
+          const missingCities: string[] = [];
           for (const activity of input.activities) {
-            const activityId = parseInt(String(activity.activity_id), 10);
-            const cityId = parseInt(String(activity.city_id), 10);
-            const existing = await db.getActivityById(activityId);
+            const externalId = String(activity.activity_id).trim();
+            const cityExternalId = String(activity.city_id).trim();
+            const destination = await db.getDestinationByExternalId(cityExternalId);
+            if (!destination) {
+              if (!missingCities.includes(cityExternalId)) {
+                missingCities.push(cityExternalId);
+              }
+              continue;
+            }
+            const existing = await db.getActivityByExternalId(externalId);
             const tags = Array.isArray(activity.tags) ? activity.tags : 
                         (typeof activity.tags === 'string' ? activity.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : []);
             const activityData = {
-              destinationId: cityId,
+              destinationId: destination.id,
               name: activity.name_ar,
               nameEn: activity.name_en,
               type: activity.category,
@@ -1118,25 +1126,33 @@ export const appRouter = router({
               googleMapsUrl: activity.google_maps_url,
             };
             if (existing) {
-              await db.updateActivity(activityId, activityData);
+              await db.updateActivityByExternalId(externalId, activityData);
               updated++;
             } else {
-              await db.createActivityWithId(activityId, activityData);
+              await db.createActivityWithExternalId(externalId, activityData);
               inserted++;
             }
           }
-          results.activities = { inserted, updated };
+          results.activities = { inserted, updated, missingCities };
         }
 
         if (input.accommodations && input.accommodations.length > 0) {
           let inserted = 0;
           let updated = 0;
+          const missingCities: string[] = [];
           for (const acc of input.accommodations) {
-            const accId = parseInt(String(acc.accommodation_id), 10);
-            const cityId = parseInt(String(acc.city_id), 10);
-            const existing = await db.getAccommodationById(accId);
+            const externalId = String(acc.accommodation_id).trim();
+            const cityExternalId = String(acc.city_id).trim();
+            const destination = await db.getDestinationByExternalId(cityExternalId);
+            if (!destination) {
+              if (!missingCities.includes(cityExternalId)) {
+                missingCities.push(cityExternalId);
+              }
+              continue;
+            }
+            const existing = await db.getAccommodationByExternalId(externalId);
             const accData = {
-              destinationId: cityId,
+              destinationId: destination.id,
               nameAr: acc.name_ar,
               nameEn: acc.name_en,
               descriptionAr: acc.description_ar,
@@ -1148,14 +1164,14 @@ export const appRouter = router({
               isActive: acc.is_active !== false,
             };
             if (existing) {
-              await db.updateAccommodation(accId, accData);
+              await db.updateAccommodationByExternalId(externalId, accData);
               updated++;
             } else {
-              await db.createAccommodationWithId(accId, accData);
+              await db.createAccommodationWithExternalId(externalId, accData);
               inserted++;
             }
           }
-          results.accommodations = { inserted, updated };
+          results.accommodations = { inserted, updated, missingCities };
         }
 
         return results;

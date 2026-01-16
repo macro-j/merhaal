@@ -26,6 +26,7 @@ export type InsertUser = typeof users.$inferInsert;
 
 export const destinations = pgTable("destinations", {
   id: serial("id").primaryKey(),
+  externalId: varchar("external_id", { length: 100 }).unique(),
   slug: varchar("slug", { length: 100 }).notNull().unique(),
   nameAr: varchar("name_ar", { length: 100 }).notNull(),
   nameEn: varchar("name_en", { length: 100 }).notNull(),
@@ -48,6 +49,7 @@ export const bestTimeEnum = pgEnum("best_time", ["morning", "afternoon", "evenin
 
 export const activities = pgTable("activities", {
   id: serial("id").primaryKey(),
+  externalId: varchar("external_id", { length: 100 }).unique(),
   destinationId: integer("destination_id").notNull(),
   name: varchar("name", { length: 200 }).notNull(),
   nameEn: varchar("name_en", { length: 200 }),
@@ -72,6 +74,7 @@ export type InsertActivity = typeof activities.$inferInsert;
 
 export const accommodations = pgTable("accommodations", {
   id: serial("id").primaryKey(),
+  externalId: varchar("external_id", { length: 100 }).unique(),
   destinationId: integer("destination_id").notNull(),
   nameAr: varchar("name_ar", { length: 200 }).notNull(),
   nameEn: varchar("name_en", { length: 200 }),

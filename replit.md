@@ -119,7 +119,12 @@ For bulk imports, use XLSX files with these exact sheet names: **Cities**, **Act
 | tier_required | text | No | free/smart/professional |
 | is_active | boolean | No | TRUE/FALSE, default: true |
 
-**Import Behavior**: Upsert matching is based on stable IDs only (city_id, activity_id, accommodation_id). Existing records are updated; new IDs are inserted.
+**Import Behavior**: 
+- Uses external_id columns for idempotent upserts (string-based matching)
+- city_id, activity_id, accommodation_id are stored as external_id in the database
+- Re-importing the same file updates existing records without creating duplicates
+- Activities/Accommodations reference cities via city_id → destinations.external_id lookup
+- Missing city references are reported with skipped record counts
 
 ## Share Plan Feature
 - Smart and Professional tier users can generate shareable URLs
