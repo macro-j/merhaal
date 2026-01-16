@@ -299,6 +299,35 @@ export const appRouter = router({
           }
         }
 
+        // Fallback: generate placeholder activities if DB is empty
+        if (filteredActivities.length === 0) {
+          const fallbackActivitiesPerDay = userTier === 'professional' ? 7 : userTier === 'smart' ? 4 : 2;
+          const fallbackTemplates = [
+            { name: `زيارة معالم ${destination.nameAr}`, type: 'سياحة', period: 'صباحًا' },
+            { name: `جولة في أسواق ${destination.nameAr}`, type: 'تسوق', period: 'ظهرًا' },
+            { name: `استكشاف المتاحف المحلية`, type: 'ثقافة', period: 'عصرًا' },
+            { name: `تناول العشاء في مطعم محلي`, type: 'طعام', period: 'مساءً' },
+            { name: `جولة مشي في الحي التاريخي`, type: 'سياحة', period: 'صباحًا' },
+            { name: `زيارة الحدائق والمتنزهات`, type: 'طبيعة', period: 'ظهرًا' },
+            { name: `تجربة المأكولات الشعبية`, type: 'طعام', period: 'عصرًا' },
+            { name: `مشاهدة غروب الشمس`, type: 'طبيعة', period: 'مساءً' },
+          ];
+          
+          for (let i = 0; i < input.days * fallbackActivitiesPerDay; i++) {
+            const template = fallbackTemplates[i % fallbackTemplates.length];
+            filteredActivities.push({
+              id: -i,
+              destinationId: input.destinationId,
+              name: template.name,
+              type: template.type,
+              details: `استمتع بتجربة فريدة في ${destination.nameAr}`,
+              duration: '2 ساعة',
+              cost: '0',
+              minTier: 'free',
+            } as any);
+          }
+        }
+
         // Shuffle activities
         const shuffled = [...filteredActivities].sort(() => Math.random() - 0.5);
 

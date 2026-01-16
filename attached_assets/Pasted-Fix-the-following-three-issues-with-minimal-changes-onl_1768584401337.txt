@@ -1,0 +1,77 @@
+Fix the following three issues with minimal changes only. Do not refactor or redesign.
+
+Empty trip plans (critical)
+Currently, trip plans are created successfully but contain no activities or details.
+Root cause: cities/activities data is empty or insufficient.
+
+Fix:
+If no activities are found for a selected city:
+
+Automatically generate a fallback itinerary using sensible defaults:
+
+2–3 activities/day for Free
+
+4–5 activities/day for Smart
+
+6–8 activities/day for Professional
+
+Activities should be reasonable placeholders based on:
+
+User interests
+
+Time of day (morning/afternoon/evening)
+
+If activities exist in DB, always prefer DB data.
+
+Never save an empty plan.
+
+Ensure accommodation recommendation is included (one per trip) if tier = professional.
+
+Important: If DB is empty, also add a minimal seed (per city) OR ensure fallback always fills itinerary so the UI never shows empty days.
+
+PDF export requires login even when logged in
+PDF export endpoint is protected by JWT auth.
+
+Fix:
+
+Ensure the PDF download request always sends Authorization: Bearer <token>
+
+Important: Use the same token source used by other working authenticated API calls (do not rely on cookies).
+
+Ensure the PDF fetch/download call uses the same auth mechanism as other protected API calls.
+
+After fix:
+
+Logged-in professional users can export PDF without login errors.
+
+Free/Smart users still receive 403.
+
+Cities carousel autoplay on iOS + pagination
+The cities carousel does not autoplay on iPhone unless the user manually swipes.
+Pagination dots appear stuck and do not reflect the active slide.
+
+Fix:
+
+Ensure autoplay works on mobile (iOS Safari):
+
+Use requestAnimationFrame or lightweight autoplay supported by the slider library.
+
+Disable autoplay only while user is actively touching/swiping.
+
+Ensure pagination dots are correctly synced with the active slide index.
+
+Autoplay should loop continuously every 3–4 seconds.
+
+Constraints
+
+Minimal changes only
+
+No redesign
+
+No new features
+
+Output
+
+Short confirmation summary
+
+List of files changed
