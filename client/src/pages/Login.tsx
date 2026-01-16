@@ -32,7 +32,7 @@ export default function Login() {
       submitBtn: "دخول",
       loadingBtn: "جارٍ الدخول...",
       noAccount: "ليس لديك حساب؟",
-      createAccount: "أنشئ حساباً",
+      createAccount: "أنشئ حسابًا",
       forgotPassword: "نسيت كلمة المرور؟",
       errors: {
         emailRequired: "أدخل بريدك الإلكتروني",

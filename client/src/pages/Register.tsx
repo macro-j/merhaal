@@ -12,6 +12,7 @@ type FormErrors = {
   email?: string;
   password?: string;
   confirmPassword?: string;
+  city?: string;
   general?: string;
 };
 
@@ -23,6 +24,7 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [city, setCity] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
 
   const content = {
@@ -37,6 +39,8 @@ export default function Register() {
       passwordPlaceholder: "٦ أحرف على الأقل",
       confirmPasswordLabel: "تأكيد كلمة المرور",
       confirmPasswordPlaceholder: "أعد إدخال كلمة المرور",
+      cityLabel: "المدينة (اختياري)",
+      cityPlaceholder: "مدينتك",
       submitBtn: "إنشاء الحساب",
       loadingBtn: "جارٍ الإنشاء...",
       hasAccount: "لديك حساب؟",
@@ -63,6 +67,8 @@ export default function Register() {
       passwordPlaceholder: "At least 6 characters",
       confirmPasswordLabel: "Confirm Password",
       confirmPasswordPlaceholder: "Re-enter password",
+      cityLabel: "City (optional)",
+      cityPlaceholder: "Your city",
       submitBtn: "Create Account",
       loadingBtn: "Creating...",
       hasAccount: "Have an account?",
@@ -130,7 +136,7 @@ export default function Register() {
     e.preventDefault();
     setErrors({});
     if (!validate()) return;
-    registerMutation.mutate({ name, email, password });
+    registerMutation.mutate({ name, email, password, city: city || undefined });
   };
 
   const handleFieldChange = (field: keyof FormErrors, value: string) => {
@@ -138,6 +144,7 @@ export default function Register() {
     if (field === "email") setEmail(value);
     if (field === "password") setPassword(value);
     if (field === "confirmPassword") setConfirmPassword(value);
+    if (field === "city") setCity(value);
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
@@ -243,6 +250,19 @@ export default function Register() {
               {errors.confirmPassword && (
                 <p className="text-sm text-red-500 mt-1.5">{errors.confirmPassword}</p>
               )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                {t.cityLabel}
+              </label>
+              <input
+                type="text"
+                value={city}
+                onChange={(e) => handleFieldChange("city", e.target.value)}
+                placeholder={t.cityPlaceholder}
+                className="w-full h-12 px-4 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+              />
             </div>
 
             <Button

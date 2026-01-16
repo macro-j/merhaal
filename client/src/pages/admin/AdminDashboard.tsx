@@ -66,7 +66,7 @@ export default function AdminDashboard() {
             </div>
             <div>
               <h3 className="font-medium">إدارة المستخدمين</h3>
-              <p className="text-sm text-muted-foreground">ترقية باقات المستخدمين يدوياً</p>
+              <p className="text-sm text-muted-foreground">ترقية باقات المستخدمين يدويًا</p>
             </div>
           </CardContent>
         </Card>

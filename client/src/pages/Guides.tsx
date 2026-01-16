@@ -86,7 +86,7 @@ export default function Guides() {
         title: "ميزة احترافية",
         subtitle: "المرشدون متاحون لمشتركي Pro",
         primaryBtn: "عرض الباقات",
-        secondaryBtn: "لاحقاً",
+        secondaryBtn: "لاحقًا",
       },
     },
     en: {

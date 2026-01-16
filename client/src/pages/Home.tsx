@@ -178,7 +178,7 @@ export default function Home() {
       ctaSection: {
         title: 'جاهز للانطلاق؟',
         subtitle: 'ابدأ التخطيط الآن',
-        button: 'ابدأ مجاناً'
+        button: 'ابدأ مجانًا'
       },
       footer: '© 2026 مرحال. جميع الحقوق محفوظة.'
     },

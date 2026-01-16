@@ -127,11 +127,11 @@ function DashboardLayoutContent({
 }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
-  const { state, toggleSidebar } = useSidebar();
+  const { state, toggleSidebar, setOpen } = useSidebar();
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const { language } = useLanguage();
+  const { language, isRTL } = useLanguage();
   const menuItems = getMenuItems(language, user?.role === 'admin');
   const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
@@ -174,10 +174,11 @@ function DashboardLayoutContent({
 
   return (
     <>
-      <div className="relative" ref={sidebarRef}>
+      <div className="relative" ref={sidebarRef} dir="ltr">
         <Sidebar
           collapsible="icon"
-          className="border-r-0"
+          className={`border-r-0 ${isRTL ? 'border-l' : 'border-r'}`}
+          side={isRTL ? 'right' : 'left'}
           disableTransition={isResizing}
         >
           <SidebarHeader className="h-16 justify-center">
@@ -285,7 +286,7 @@ function DashboardLayoutContent({
 
       <SidebarInset>
         {isMobile && (
-          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
+          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40" dir={isRTL ? 'rtl' : 'ltr'}>
             <div className="flex items-center gap-2">
               <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
               <div className="flex items-center gap-3">
@@ -298,7 +299,7 @@ function DashboardLayoutContent({
             </div>
           </div>
         )}
-        <main className="flex-1 p-4">{children}</main>
+        <main className="flex-1 p-4" dir={isRTL ? 'rtl' : 'ltr'}>{children}</main>
       </SidebarInset>
     </>
   );

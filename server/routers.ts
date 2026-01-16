@@ -27,7 +27,7 @@ export const appRouter = router({
         if (existingUser) {
           throw new TRPCError({
             code: 'CONFLICT',
-            message: 'البريد الإلكتروني مسجل مسبقاً',
+            message: 'البريد الإلكتروني مسجل مسبقًا',
           });
         }
 
@@ -218,9 +218,9 @@ export const appRouter = router({
         // Check tier limits
         const userTier = user.tier || 'free';
         const tierLimits = {
-          free: { maxDays: 1, maxTrips: 1 },
-          smart: { maxDays: 10, maxTrips: 3 },
-          professional: { maxDays: 999, maxTrips: 999 },
+          free: { maxDays: 1, maxTrips: 1, maxActivitiesPerDay: 3 },
+          smart: { maxDays: 10, maxTrips: 3, maxActivitiesPerDay: 5 },
+          professional: { maxDays: 999, maxTrips: 999, maxActivitiesPerDay: 10 },
         };
         const limits = tierLimits[userTier as keyof typeof tierLimits];
 
@@ -303,8 +303,15 @@ export const appRouter = router({
 
         // Generate daily plan
         const plan = [];
-        const timeSlots = ['9:00 AM', '12:00 PM', '3:00 PM', '6:00 PM'];
-        const maxActivitiesPerDay = Math.min(4, shuffled.length / input.days);
+        const timeSlots = [
+          { time: '09:00', period: 'صباحًا' },
+          { time: '12:00', period: 'ظهرًا' },
+          { time: '15:00', period: 'عصرًا' },
+          { time: '18:00', period: 'مساءً' },
+        ];
+        const dayTitles = ['اليوم الأول', 'اليوم الثاني', 'اليوم الثالث', 'اليوم الرابع', 'اليوم الخامس', 'اليوم السادس', 'اليوم السابع', 'اليوم الثامن', 'اليوم التاسع', 'اليوم العاشر'];
+        // Enforce tier-based activity limit per day
+        const maxActivitiesPerDay = Math.min(limits.maxActivitiesPerDay, Math.ceil(shuffled.length / input.days), 4);
 
         for (let day = 1; day <= input.days; day++) {
           const dayActivities = [];
@@ -312,18 +319,21 @@ export const appRouter = router({
           
           for (let i = 0; i < maxActivitiesPerDay && startIdx + i < shuffled.length; i++) {
             const activity = shuffled[startIdx + i];
+            const slot = timeSlots[i] || timeSlots[0];
             dayActivities.push({
-              time: timeSlots[i] || '9:00 AM',
+              time: slot.time,
+              period: slot.period,
               activity: activity.name,
+              description: activity.details || `استمتع بـ${activity.name} في ${destination.nameAr}`,
               type: activity.type,
-              duration: activity.duration,
+              duration: activity.duration || '2 ساعة',
               cost: activity.cost,
-              details: activity.details,
             });
           }
 
           plan.push({
             day,
+            title: dayTitles[day - 1] || `اليوم ${day}`,
             activities: dayActivities,
           });
         }

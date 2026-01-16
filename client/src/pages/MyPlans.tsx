@@ -204,19 +204,30 @@ export default function MyPlans() {
                           {plan?.dailyPlan?.map((day: any, idx: number) => (
                             <div key={idx} className="border rounded-lg p-3 sm:p-4">
                               <h5 className="font-medium text-sm sm:text-base text-primary mb-3">
-                                {t.dayLabel} {day.day}
+                                {day.title || `${t.dayLabel} ${day.day}`}
                               </h5>
-                              <div className="space-y-2">
+                              <div className="space-y-3">
                                 {day.activities?.map((activity: any, actIdx: number) => (
-                                  <div key={actIdx} className="flex items-start gap-3 text-sm">
-                                    <span className="text-muted-foreground w-16 sm:w-20 flex-shrink-0 text-xs sm:text-sm">
-                                      {activity.time}
-                                    </span>
-                                    <div className="min-w-0">
+                                  <div key={actIdx} className="flex items-start gap-3 text-sm border-s-2 border-primary/20 ps-3">
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                                          {activity.time} {activity.period || ''}
+                                        </span>
+                                        {activity.duration && (
+                                          <span className="text-xs text-muted-foreground">
+                                            {activity.duration}
+                                          </span>
+                                        )}
+                                      </div>
                                       <p className="font-medium text-sm">{activity.activity}</p>
-                                      <p className="text-xs text-muted-foreground">
+                                      {activity.description && (
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                          {activity.description}
+                                        </p>
+                                      )}
+                                      <p className="text-xs text-muted-foreground/70 mt-1">
                                         {activity.type}
-                                        {activity.duration && ` • ${activity.duration}`}
                                       </p>
                                     </div>
                                   </div>
