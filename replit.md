@@ -57,11 +57,13 @@ A full-stack trip planning application for Saudi Arabia featuring destination gu
 - Tier-enforced activity limits per day
 
 ## Recent Changes
-- 2026-01-16: PDF Export and tier alignment
-  - Added PDF export feature for Professional tier users (jsPDF)
-  - PDF includes trip destination, duration, accommodation, daily itinerary
+- 2026-01-16: Arabic PDF Export and tier alignment
+  - Added PDF export with Arabic RTL support using Amiri font (jsPDF)
+  - PDF includes: destination, duration, dates, accommodation, daily itinerary
+  - Arabic day titles (اليوم الأول، اليوم الثاني...) and time periods (صباحًا، ظهرًا، عصرًا، مساءً)
   - Aligned Packages page tier IDs with database (free/smart/professional)
   - PDF export button visible only to professional tier users in MyPlans
+  - Removed all "Premium/بريميوم" naming, using "احترافي/Professional" consistently
 - 2026-01-16: Fix discover city and user city display
   - Added automatic destination seeding on server startup (5 cities matching Home.tsx)
   - Fixed register mutation to return city in user object
