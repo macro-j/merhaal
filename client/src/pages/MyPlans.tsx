@@ -6,10 +6,9 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { trpc } from "@/lib/trpc";
 import { Calendar, MapPin, Plus, ChevronDown, Trash2, Clock, FileDown, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
-import { jsPDF } from "jspdf";
 
 export default function MyPlans() {
   const { user, loading } = useAuth();
@@ -20,7 +19,6 @@ export default function MyPlans() {
   });
   const [openTrips, setOpenTrips] = useState<number[]>([]);
   const [exportingPdf, setExportingPdf] = useState<number | null>(null);
-  const amiriFontRef = useRef<string | null>(null);
 
   const deleteMutation = trpc.trips.delete.useMutation({
     onSuccess: () => {
@@ -101,126 +99,48 @@ export default function MyPlans() {
     }
   };
 
-  const loadAmiriFont = async (): Promise<string> => {
-    if (amiriFontRef.current) return amiriFontRef.current;
-    
-    const response = await fetch('/fonts/Amiri-Regular.ttf');
-    const blob = await response.blob();
-    
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = (reader.result as string).split(',')[1];
-        amiriFontRef.current = base64;
-        resolve(base64);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  };
-
-  const handleExportPDF = async (trip: any) => {
-    setExportingPdf(trip.id);
+  const handleExportPDF = async (tripId: number) => {
+    setExportingPdf(tripId);
     
     try {
-      const fontData = await loadAmiriFont();
-      const plan = trip.plan as any;
-      const cityName = plan?.destination || `رحلة #${trip.id}`;
-      
-      const doc = new jsPDF();
-      const pageWidth = 210;
-      const rightMargin = pageWidth - 20;
-      let y = 25;
-      
-      doc.addFileToVFS('Amiri-Regular.ttf', fontData);
-      doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
-      doc.setFont('Amiri');
-      
-      doc.setFontSize(22);
-      doc.text('خطة رحلة مرحال', rightMargin, y, { align: 'right' });
-      y += 12;
-      
-      doc.setFontSize(16);
-      doc.text(cityName, rightMargin, y, { align: 'right' });
-      y += 15;
-      
-      doc.setFontSize(11);
-      const daysText = trip.days === 1 ? 'يوم واحد' : `${trip.days} أيام`;
-      doc.text(`المدة: ${daysText}`, rightMargin, y, { align: 'right' });
-      y += 8;
-      
-      const dateStr = new Date(trip.createdAt).toLocaleDateString('ar-SA', { 
-        year: 'numeric', month: 'long', day: 'numeric' 
-      });
-      doc.text(`تاريخ الإنشاء: ${dateStr}`, rightMargin, y, { align: 'right' });
-      y += 15;
-      
-      if (plan?.accommodation) {
-        doc.setFontSize(13);
-        doc.text('الإقامة', rightMargin, y, { align: 'right' });
-        y += 8;
-        doc.setFontSize(10);
-        doc.text(plan.accommodation.name || '', rightMargin - 10, y, { align: 'right' });
-        y += 6;
-        doc.text(`${plan.accommodation.type || ''} | ${plan.accommodation.pricePerNight || ''} ريال/ليلة`, rightMargin - 10, y, { align: 'right' });
-        y += 15;
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('يجب تسجيل الدخول أولاً');
+        return;
       }
-      
-      doc.setFontSize(14);
-      doc.text('برنامج الرحلة اليومي', rightMargin, y, { align: 'right' });
-      y += 12;
-      
-      const dayTitles = ['اليوم الأول', 'اليوم الثاني', 'اليوم الثالث', 'اليوم الرابع', 'اليوم الخامس', 
-                         'اليوم السادس', 'اليوم السابع', 'اليوم الثامن', 'اليوم التاسع', 'اليوم العاشر'];
-      
-      plan?.dailyPlan?.forEach((day: any, dayIdx: number) => {
-        if (y > 250) {
-          doc.addPage();
-          doc.setFont('Amiri');
-          y = 25;
-        }
-        
-        doc.setFontSize(12);
-        const dayTitle = day.title || dayTitles[dayIdx] || `اليوم ${dayIdx + 1}`;
-        doc.text(dayTitle, rightMargin, y, { align: 'right' });
-        y += 9;
-        
-        doc.setFontSize(9);
-        day.activities?.forEach((activity: any) => {
-          if (y > 270) {
-            doc.addPage();
-            doc.setFont('Amiri');
-            y = 25;
-          }
-          
-          const timeStr = activity.time || '';
-          const period = activity.period || '';
-          const activityName = activity.activity || activity.name || '';
-          
-          doc.text(`${period} ${timeStr} - ${activityName}`, rightMargin - 5, y, { align: 'right' });
-          y += 6;
-          
-          if (activity.description) {
-            const desc = activity.description.length > 70 ? activity.description.substring(0, 67) + '...' : activity.description;
-            doc.setTextColor(100);
-            doc.text(desc, rightMargin - 10, y, { align: 'right' });
-            doc.setTextColor(0);
-            y += 6;
-          }
-          y += 2;
-        });
-        y += 6;
+
+      const response = await fetch(`/api/plans/${tripId}/pdf`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 403 && errorData.code === 'TIER_REQUIRED') {
+          toast.error('تصدير PDF متاح فقط لمستخدمي الباقة الاحترافية');
+        } else if (response.status === 404) {
+          toast.error('الخطة غير موجودة');
+        } else {
+          toast.error(errorData.error || 'حدث خطأ أثناء التصدير');
+        }
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `merhaal-trip-${tripId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
       
-      doc.setFontSize(8);
-      doc.setTextColor(120);
-      doc.text('مرحال - رفيقك في السفر داخل السعودية', pageWidth / 2, 285, { align: 'center' });
-      
-      doc.save(`merhaal-trip-${trip.id}.pdf`);
       toast.success('تم تصدير الخطة بنجاح');
     } catch (error) {
       console.error('PDF export error:', error);
-      toast.error(language === 'ar' ? 'حدث خطأ أثناء التصدير' : 'Error exporting PDF');
+      toast.error('حدث خطأ أثناء التصدير');
     } finally {
       setExportingPdf(null);
     }
@@ -307,7 +227,7 @@ export default function MyPlans() {
                               disabled={exportingPdf === trip.id}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleExportPDF(trip);
+                                handleExportPDF(trip.id);
                               }}
                               title={language === 'ar' ? 'تصدير PDF' : 'Export PDF'}
                             >
