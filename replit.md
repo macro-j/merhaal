@@ -128,6 +128,14 @@ For bulk imports, use XLSX files with these exact sheet names: **Cities**, **Act
 - Trip owners can cancel sharing anytime
 
 ## Recent Changes
+- 2026-01-16: Unified Excel Import Option
+  - Added "استيراد ملف شامل" tab for single-file upload containing all datasets
+  - Automatic sheet detection: Cities, Activities, Accommodations (exact names required)
+  - Arabic error messages when required sheets are missing
+  - Per-sheet validation with preview in compact cards
+  - Import order enforced: Cities → Activities → Accommodations
+  - Consolidated results summary with admin page links
+  - Existing separate-upload functionality preserved under "استيراد منفصل" tab
 - 2026-01-16: Admin Bulk Import System
   - AdminImport page (/admin/import) with CSV and XLSX file support
   - Three-dataset upload: cities, activities, accommodations
