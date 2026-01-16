@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { trpc } from "@/lib/trpc";
-import { Calendar, MapPin, Plus, ChevronDown, Trash2, Clock } from "lucide-react";
+import { Calendar, MapPin, Plus, ChevronDown, Trash2, Clock, FileDown } from "lucide-react";
 import { useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
+import { jsPDF } from "jspdf";
 
 export default function MyPlans() {
   const { user, loading } = useAuth();
@@ -98,6 +99,75 @@ export default function MyPlans() {
     }
   };
 
+  const handleExportPDF = (trip: any) => {
+    const plan = trip.plan as any;
+    const cityName = plan?.destination || `Trip #${trip.id}`;
+    
+    const doc = new jsPDF();
+    let y = 20;
+    
+    doc.setFontSize(20);
+    doc.text(`Trip to ${cityName}`, 105, y, { align: 'center' });
+    y += 15;
+    
+    doc.setFontSize(12);
+    doc.text(`Duration: ${trip.days} days`, 20, y);
+    y += 8;
+    doc.text(`Created: ${new Date(trip.createdAt).toLocaleDateString()}`, 20, y);
+    y += 15;
+    
+    if (plan?.accommodation) {
+      doc.setFontSize(14);
+      doc.text('Accommodation:', 20, y);
+      y += 8;
+      doc.setFontSize(11);
+      doc.text(`${plan.accommodation.name} - ${plan.accommodation.type}`, 25, y);
+      y += 6;
+      doc.text(`${plan.accommodation.pricePerNight} SAR/night`, 25, y);
+      y += 15;
+    }
+    
+    doc.setFontSize(14);
+    doc.text('Daily Itinerary:', 20, y);
+    y += 10;
+    
+    plan?.dailyPlan?.forEach((day: any) => {
+      if (y > 260) {
+        doc.addPage();
+        y = 20;
+      }
+      
+      doc.setFontSize(13);
+      doc.text(day.title || `Day ${day.day}`, 20, y);
+      y += 8;
+      
+      doc.setFontSize(10);
+      day.activities?.forEach((activity: any) => {
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+        const timeStr = `${activity.time} ${activity.period || ''}`.trim();
+        doc.text(`${timeStr} - ${activity.activity}`, 25, y);
+        y += 5;
+        if (activity.description) {
+          const desc = activity.description.substring(0, 80);
+          doc.setFontSize(9);
+          doc.text(desc, 30, y);
+          doc.setFontSize(10);
+          y += 5;
+        }
+        y += 3;
+      });
+      y += 5;
+    });
+    
+    doc.save(`trip-${trip.id}.pdf`);
+    toast.success(language === 'ar' ? 'تم تصدير الخطة' : 'Plan exported to PDF');
+  };
+
+  const isProfessional = user?.tier === 'professional';
+
   const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US', {
       year: 'numeric',
@@ -169,6 +239,20 @@ export default function MyPlans() {
                           </div>
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
+                          {isProfessional && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleExportPDF(trip);
+                              }}
+                              title={language === 'ar' ? 'تصدير PDF' : 'Export PDF'}
+                            >
+                              <FileDown className="w-4 h-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
