@@ -369,9 +369,26 @@ export const appRouter = router({
           });
         }
 
-        // Select accommodation
-        const accommodationType = input.accommodationType || 'متوسط';
-        const selectedAccommodation = accommodations.find(a => a.type === accommodationType) || accommodations[0];
+        // Select accommodation by class matching
+        const accommodationClass = input.accommodationType === 'فاخر' ? 'luxury' : 
+                                   input.accommodationType === 'اقتصادي' ? 'economy' : 'mid';
+        const selectedAccommodation = accommodations.find(a => a.class === accommodationClass && a.isActive) || 
+                                      accommodations.find(a => a.isActive) || null;
+        
+        // Build accommodation info for plan
+        let accommodationInfo = null;
+        if (selectedAccommodation) {
+          accommodationInfo = {
+            name: selectedAccommodation.nameAr,
+            nameEn: selectedAccommodation.nameEn,
+            class: selectedAccommodation.class,
+            priceRange: selectedAccommodation.priceRange,
+            googleMapsUrl: selectedAccommodation.googleMapsUrl || selectedAccommodation.googlePlaceId 
+              ? `https://www.google.com/maps/place/?q=place_id:${selectedAccommodation.googlePlaceId}` 
+              : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedAccommodation.nameAr + ' ' + destination.nameAr + ' السعودية')}`,
+            rating: selectedAccommodation.rating,
+          };
+        }
 
         // Create trip record
         const tripData = {
@@ -380,19 +397,15 @@ export const appRouter = router({
           days: input.days,
           budget: input.budget.toString(),
           interests: input.interests,
-          accommodationType: accommodationType,
+          accommodationType: input.accommodationType || 'متوسط',
           plan: {
             destination: destination.nameAr,
             days: input.days,
             budget: input.budget,
             budgetDistribution,
             qualityLevel,
-            accommodation: selectedAccommodation ? {
-              name: selectedAccommodation.name,
-              type: selectedAccommodation.type,
-              pricePerNight: selectedAccommodation.pricePerNight,
-              features: selectedAccommodation.features,
-            } : null,
+            accommodation: accommodationInfo,
+            noAccommodationMessage: !selectedAccommodation ? 'لا توجد إقامات في هذا التصنيف لهذه المدينة' : null,
             dailyPlan: plan,
           },
         };
@@ -691,6 +704,101 @@ export const appRouter = router({
           }
           
           await db.deleteActivity(input.id);
+          return { success: true };
+        }),
+    }),
+
+    accommodations: router({
+      list: protectedProcedure.query(async ({ ctx }) => {
+        const authHeader = ctx.req.headers.authorization;
+        if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        
+        const token = authHeader.substring(7);
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+        const user = await db.getUserById(decoded.userId);
+        
+        if (!user || user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN' });
+        }
+        
+        return await db.getAllAccommodations();
+      }),
+
+      create: protectedProcedure
+        .input(z.object({
+          destinationId: z.number(),
+          nameAr: z.string().min(2),
+          nameEn: z.string().optional(),
+          descriptionAr: z.string().optional(),
+          descriptionEn: z.string().optional(),
+          class: z.enum(['economy', 'mid', 'luxury']).default('mid'),
+          priceRange: z.string().optional(),
+          googlePlaceId: z.string().optional(),
+          googleMapsUrl: z.string().optional(),
+          isActive: z.boolean().default(true),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          const authHeader = ctx.req.headers.authorization;
+          if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+          
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+          const user = await db.getUserById(decoded.userId);
+          
+          if (!user || user.role !== 'admin') {
+            throw new TRPCError({ code: 'FORBIDDEN' });
+          }
+          
+          const result = await db.createAccommodation(input);
+          return { id: result.id };
+        }),
+
+      update: protectedProcedure
+        .input(z.object({
+          id: z.number(),
+          destinationId: z.number().optional(),
+          nameAr: z.string().optional(),
+          nameEn: z.string().optional(),
+          descriptionAr: z.string().optional(),
+          descriptionEn: z.string().optional(),
+          class: z.enum(['economy', 'mid', 'luxury']).optional(),
+          priceRange: z.string().optional(),
+          googlePlaceId: z.string().optional(),
+          googleMapsUrl: z.string().optional(),
+          isActive: z.boolean().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          const authHeader = ctx.req.headers.authorization;
+          if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+          
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+          const user = await db.getUserById(decoded.userId);
+          
+          if (!user || user.role !== 'admin') {
+            throw new TRPCError({ code: 'FORBIDDEN' });
+          }
+          
+          const { id, ...data } = input;
+          await db.updateAccommodation(id, data);
+          return { success: true };
+        }),
+
+      delete: protectedProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(async ({ ctx, input }) => {
+          const authHeader = ctx.req.headers.authorization;
+          if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+          
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+          const user = await db.getUserById(decoded.userId);
+          
+          if (!user || user.role !== 'admin') {
+            throw new TRPCError({ code: 'FORBIDDEN' });
+          }
+          
+          await db.deleteAccommodation(input.id);
           return { success: true };
         }),
     }),
