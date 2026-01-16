@@ -115,10 +115,16 @@ export default function Dashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold">{t.welcome} {user?.name}!</h1>
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
               <span className={`text-xs px-2 py-1 rounded-full ${currentTier.bgColor} ${currentTier.color} font-medium`}>
                 {currentTier.name}
               </span>
+              {user?.city && (
+                <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">
+                  <MapPin className="w-3 h-3 inline-block me-1" />
+                  {user.city}
+                </span>
+              )}
               <span className="text-sm text-muted-foreground">{currentTier.limits}</span>
             </div>
           </div>

@@ -57,7 +57,14 @@ A full-stack trip planning application for Saudi Arabia featuring destination gu
 - Tier-enforced activity limits per day
 
 ## Recent Changes
-- 2026-01-16: UX finalization and trip generation improvements
+- 2026-01-16: UX finalization and flow improvements
+  - City field displayed in dashboard header with MapPin icon
+  - Pricing page redirects to /login for unauthenticated users
+  - CityDetailModal has "أنشئ خطة رحلتك" CTA with login redirect
+  - Navbar shows different links when authenticated (Plan Trip, My Plans, Support)
+  - Admin link visible only for admin role
+  - Fixed CityDetailModal schema field mappings
+- 2026-01-16: Trip generation and tier system
   - Added day titles and time periods to itinerary structure
   - Enforced tier-based activity limits per day
   - Added upgrade request flow (no payments)

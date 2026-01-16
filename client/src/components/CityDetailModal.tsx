@@ -2,6 +2,8 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { X, MapPin, Hotel, Utensils, Activity } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useLocation } from "wouter";
 
 interface CityDetailModalProps {
   cityId: string | null;
@@ -11,6 +13,9 @@ interface CityDetailModalProps {
 }
 
 export function CityDetailModal({ cityId, isOpen, onClose, language }: CityDetailModalProps) {
+  const { isAuthenticated } = useAuth();
+  const [, setLocation] = useLocation();
+  
   const { data: destination, isLoading } = trpc.destinations.getByName.useQuery(
     { name: cityId || '' },
     { enabled: !!cityId }
@@ -79,6 +84,23 @@ export function CityDetailModal({ cityId, isOpen, onClose, language }: CityDetai
                   {language === 'ar' ? destination.descriptionAr : destination.descriptionEn}
                 </p>
               </div>
+              
+              {/* CTA Button */}
+              <div className="pt-4">
+                <Button 
+                  className="w-full h-12 rounded-full text-base font-medium"
+                  onClick={() => {
+                    onClose();
+                    if (isAuthenticated) {
+                      setLocation('/plan-trip');
+                    } else {
+                      setLocation('/login?redirect=/plan-trip');
+                    }
+                  }}
+                >
+                  {language === 'ar' ? 'أنشئ خطة رحلتك' : 'Plan Your Trip'}
+                </Button>
+              </div>
 
               {/* Activities */}
               {activities && activities.length > 0 && (
@@ -91,12 +113,14 @@ export function CityDetailModal({ cityId, isOpen, onClose, language }: CityDetai
                     {activities.map((activity) => (
                       <div key={activity.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                         <h4 className="font-semibold mb-2">{activity.name}</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                          {activity.description}
-                        </p>
+                        {activity.details && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                            {activity.details}
+                          </p>
+                        )}
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-purple-600 dark:text-purple-400 font-medium">
-                            {activity.price} {language === 'ar' ? 'ريال' : 'SAR'}
+                            {activity.cost} {language === 'ar' ? 'ريال' : 'SAR'}
                           </span>
                           <span className="text-gray-500">
                             {activity.duration} {language === 'ar' ? 'ساعة' : 'hours'}
@@ -120,10 +144,10 @@ export function CityDetailModal({ cityId, isOpen, onClose, language }: CityDetai
                       <div key={hotel.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                         <div className="flex justify-between items-start mb-2">
                           <h4 className="font-semibold">{hotel.name}</h4>
-                          <span className="text-yellow-500">{'★'.repeat(hotel.stars)}</span>
+                          {hotel.rating && <span className="text-yellow-500">★ {hotel.rating}</span>}
                         </div>
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                          {hotel.description}
+                          {hotel.type}
                         </p>
                         <p className="text-purple-600 dark:text-purple-400 font-medium">
                           {language === 'ar' ? 'من' : 'From'} {hotel.pricePerNight} {language === 'ar' ? 'ريال/ليلة' : 'SAR/night'}
@@ -149,7 +173,7 @@ export function CityDetailModal({ cityId, isOpen, onClose, language }: CityDetai
                           {restaurant.cuisine}
                         </p>
                         <p className="text-purple-600 dark:text-purple-400 font-medium">
-                          {language === 'ar' ? 'متوسط السعر:' : 'Average price:'} {restaurant.averagePrice} {language === 'ar' ? 'ريال' : 'SAR'}
+                          {language === 'ar' ? 'متوسط السعر:' : 'Average price:'} {restaurant.avgPrice} {language === 'ar' ? 'ريال' : 'SAR'}
                         </p>
                       </div>
                     ))}

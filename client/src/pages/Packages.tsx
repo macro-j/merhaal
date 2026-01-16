@@ -3,11 +3,19 @@ import { Check } from "lucide-react";
 import { toast } from "sonner";
 import { Navbar } from "@/components/Navbar";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
+import { useLocation } from "wouter";
 
 export default function Packages() {
   const { language, isRTL } = useLanguage();
+  const { isAuthenticated } = useAuth();
+  const [, setLocation] = useLocation();
 
   const handleSelectPackage = (packageName: string) => {
+    if (!isAuthenticated) {
+      setLocation('/login?redirect=/packages');
+      return;
+    }
     toast.success(language === 'ar' 
       ? `تم اختيار ${packageName}! سيتم التواصل معك لإتمام العملية`
       : `${packageName} selected! We will contact you to complete the process`

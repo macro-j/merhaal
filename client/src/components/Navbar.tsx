@@ -19,12 +19,18 @@ interface NavLink {
   labelEn: string;
 }
 
-const navLinks: NavLink[] = [
+const publicNavLinks: NavLink[] = [
   { href: "/", labelAr: "الرئيسية", labelEn: "Home" },
   { href: "/packages", labelAr: "الباقات", labelEn: "Plans" },
   { href: "/guides", labelAr: "المرشدون", labelEn: "Guides" },
   { href: "/about", labelAr: "عن مرحال", labelEn: "About" },
   { href: "/support", labelAr: "الدعم", labelEn: "Help" },
+];
+
+const authNavLinks: NavLink[] = [
+  { href: "/plan-trip", labelAr: "خطط رحلة", labelEn: "Plan Trip" },
+  { href: "/my-plans", labelAr: "خططي", labelEn: "My Plans" },
+  { href: "/support", labelAr: "الدعم", labelEn: "Support" },
 ];
 
 export function Navbar() {
@@ -34,6 +40,8 @@ export function Navbar() {
   const { language, toggleLanguage } = useLanguage();
   const { isAuthenticated, user } = useAuth();
   const isAdmin = user?.role === 'admin';
+
+  const navLinks = isAuthenticated ? authNavLinks : publicNavLinks;
 
   const isActive = (href: string) => {
     if (href === "/") return location === "/";
@@ -106,13 +114,6 @@ export function Navbar() {
 
               {isAuthenticated ? (
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => (window.location.href = "/my-plans")}
-                  >
-                    {language === "ar" ? "خططي" : "My Plans"}
-                  </Button>
                   {isAdmin && (
                     <Button
                       variant="ghost"
@@ -207,13 +208,6 @@ export function Navbar() {
 
             {isAuthenticated ? (
               <div className="flex flex-col gap-2">
-                <Button
-                  variant="outline"
-                  className="w-full h-12"
-                  onClick={() => handleNavClick("/my-plans")}
-                >
-                  {language === "ar" ? "خططي" : "My Plans"}
-                </Button>
                 {isAdmin && (
                   <Button
                     variant="outline"
