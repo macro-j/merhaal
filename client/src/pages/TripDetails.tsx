@@ -4,11 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
-import { Calendar, MapPin, DollarSign, Hotel, Clock, ExternalLink, FileDown, Loader2, ArrowRight, Sparkles } from "lucide-react";
+import { Calendar, MapPin, DollarSign, Hotel, Clock, ExternalLink, FileDown, Loader2, ArrowRight, Sparkles, Share2, Link, Copy, X, MessageCircle } from "lucide-react";
 import { useLocation, useRoute } from "wouter";
 import { useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 export default function TripDetails() {
   const { user } = useAuth();
@@ -16,15 +23,40 @@ export default function TripDetails() {
   const [, setLocation] = useLocation();
   const { language, isRTL } = useLanguage();
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
 
   const tripId = params?.id ? parseInt(params.id) : null;
-  const { data: trips, isLoading } = trpc.trips.list.useQuery(undefined, {
+  const { data: trips, isLoading, refetch } = trpc.trips.list.useQuery(undefined, {
     enabled: !!user,
+  });
+
+  const generateShareMutation = trpc.trips.generateShareLink.useMutation({
+    onSuccess: (data) => {
+      const url = `${window.location.origin}/shared/${data.shareToken}`;
+      setShareUrl(url);
+      setShareDialogOpen(true);
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message || 'حدث خطأ أثناء إنشاء رابط المشاركة');
+    },
+  });
+
+  const removeShareMutation = trpc.trips.removeShareLink.useMutation({
+    onSuccess: () => {
+      setShareUrl(null);
+      setShareDialogOpen(false);
+      refetch();
+      toast.success('تم إلغاء المشاركة');
+    },
   });
 
   const trip = trips?.find((t: any) => t.id === tripId);
   const plan = trip?.plan as any;
   const isProfessional = user?.tier === 'professional';
+  const canShare = user?.tier === 'smart' || user?.tier === 'professional';
 
   const handleExportPDF = async () => {
     if (!tripId) return;
@@ -106,6 +138,24 @@ export default function TripDetails() {
     return rules[period]?.[type] || null;
   };
 
+  const handleShare = () => {
+    if (!tripId) return;
+    if (trip?.shareToken) {
+      const url = `${window.location.origin}/shared/${trip.shareToken}`;
+      setShareUrl(url);
+      setShareDialogOpen(true);
+    } else {
+      generateShareMutation.mutate({ tripId });
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (shareUrl) {
+      navigator.clipboard.writeText(shareUrl);
+      toast.success('تم نسخ الرابط');
+    }
+  };
+
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -167,20 +217,47 @@ export default function TripDetails() {
                 )}
               </div>
               
-              {isProfessional && (
-                <Button 
-                  onClick={handleExportPDF}
-                  disabled={exportingPdf}
-                  className="gap-2"
-                >
-                  {exportingPdf ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <FileDown className="w-4 h-4" />
-                  )}
-                  تصدير PDF
-                </Button>
-              )}
+              <div className="flex flex-wrap gap-2">
+                {canShare && (
+                  <Button 
+                    variant="outline"
+                    onClick={handleShare}
+                    disabled={generateShareMutation.isPending}
+                    className="gap-2"
+                  >
+                    {generateShareMutation.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Share2 className="w-4 h-4" />
+                    )}
+                    مشاركة
+                  </Button>
+                )}
+                {isProfessional && (
+                  <Button 
+                    variant="outline"
+                    onClick={() => setAiChatOpen(true)}
+                    className="gap-2"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    مساعد الرحلة
+                  </Button>
+                )}
+                {isProfessional && (
+                  <Button 
+                    onClick={handleExportPDF}
+                    disabled={exportingPdf}
+                    className="gap-2"
+                  >
+                    {exportingPdf ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <FileDown className="w-4 h-4" />
+                    )}
+                    تصدير PDF
+                  </Button>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -317,6 +394,79 @@ export default function TripDetails() {
           </Button>
         </div>
       </div>
+
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link className="w-5 h-5" />
+              مشاركة الخطة
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              شارك هذا الرابط مع الآخرين ليتمكنوا من مشاهدة خطة رحلتك
+            </p>
+            <div className="flex gap-2">
+              <Input 
+                value={shareUrl || ''} 
+                readOnly 
+                className="flex-1" 
+                dir="ltr"
+              />
+              <Button size="icon" variant="outline" onClick={copyToClipboard}>
+                <Copy className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="flex justify-between">
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={() => tripId && removeShareMutation.mutate({ tripId })}
+                disabled={removeShareMutation.isPending}
+              >
+                {removeShareMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin me-2" />
+                ) : (
+                  <X className="w-4 h-4 me-2" />
+                )}
+                إلغاء المشاركة
+              </Button>
+              <Button variant="outline" onClick={() => setShareDialogOpen(false)}>
+                إغلاق
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={aiChatOpen} onOpenChange={setAiChatOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageCircle className="w-5 h-5" />
+              مساعد الرحلة الذكي
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-muted/50 rounded-lg p-4 text-center">
+              <Sparkles className="w-8 h-8 text-amber-500 mx-auto mb-2" />
+              <h3 className="font-semibold mb-2">ميزة قادمة حصريًا للاحترافي</h3>
+              <p className="text-sm text-muted-foreground">
+                قريبًا ستتمكن من التحدث مع مساعد ذكي لتعديل خطتك:
+              </p>
+              <ul className="text-sm text-muted-foreground mt-2 space-y-1" dir="rtl">
+                <li>• "خل اليوم الثاني مطاعم أكثر"</li>
+                <li>• "قلل التسوق وزد الطبيعة"</li>
+                <li>• "أضف أنشطة مسائية"</li>
+              </ul>
+            </div>
+            <Button className="w-full" onClick={() => setAiChatOpen(false)}>
+              حسنًا
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

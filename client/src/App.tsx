@@ -22,6 +22,7 @@ import AdminCities from "./pages/admin/AdminCities";
 import AdminActivities from "./pages/admin/AdminActivities";
 import AdminAccommodations from "./pages/admin/AdminAccommodations";
 import AdminSupport from "./pages/admin/AdminSupport";
+import SharedTrip from "./pages/SharedTrip";
 
 function Router() {
   return (
@@ -43,6 +44,7 @@ function Router() {
       <Route path="/admin/activities" component={AdminActivities} />
       <Route path="/admin/accommodations" component={AdminAccommodations} />
       <Route path="/admin/support" component={AdminSupport} />
+      <Route path="/shared/:token" component={SharedTrip} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
