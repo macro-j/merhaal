@@ -1011,42 +1011,42 @@ export const appRouter = router({
     bulkImport: protectedProcedure
       .input(z.object({
         cities: z.array(z.object({
-          nameAr: z.string(),
-          nameEn: z.string().optional(),
-          descriptionAr: z.string().optional(),
-          descriptionEn: z.string().optional(),
-          image: z.string().optional(),
-          region: z.string().optional(),
-          isActive: z.boolean().optional(),
+          city_id: z.number(),
+          name_ar: z.string(),
+          name_en: z.string().optional(),
+          description_ar: z.string().optional(),
+          description_en: z.string().optional(),
+          image_url: z.string().optional(),
+          is_active: z.boolean().optional(),
         })).optional(),
         activities: z.array(z.object({
-          destinationId: z.number(),
-          name: z.string(),
-          nameEn: z.string().optional(),
-          type: z.string(),
-          category: z.string().optional(),
-          tags: z.array(z.string()).optional(),
-          details: z.string().optional(),
-          detailsEn: z.string().optional(),
-          duration: z.string().optional(),
-          cost: z.string().optional(),
-          budgetLevel: z.string().optional(),
-          bestTimeOfDay: z.string().optional(),
-          minTier: z.string().optional(),
-          isActive: z.boolean().optional(),
+          activity_id: z.number(),
+          city_id: z.number(),
+          name_ar: z.string(),
+          name_en: z.string().optional(),
+          description_ar: z.string().optional(),
+          category: z.string(),
+          tags: z.union([z.array(z.string()), z.string()]).optional(),
+          budget_level: z.string().optional(),
+          best_time: z.string().optional(),
+          duration_min: z.number().optional(),
+          is_indoor: z.boolean().optional(),
+          is_unique: z.boolean().optional(),
+          google_maps_url: z.string().optional(),
+          tier_required: z.string().optional(),
+          is_active: z.boolean().optional(),
         })).optional(),
         accommodations: z.array(z.object({
-          destinationId: z.number(),
-          nameAr: z.string(),
-          nameEn: z.string().optional(),
-          descriptionAr: z.string().optional(),
-          descriptionEn: z.string().optional(),
+          accommodation_id: z.number(),
+          city_id: z.number(),
+          name_ar: z.string(),
+          name_en: z.string().optional(),
           class: z.string(),
-          priceRange: z.string().optional(),
-          googlePlaceId: z.string().optional(),
-          googleMapsUrl: z.string().optional(),
-          rating: z.string().optional(),
-          isActive: z.boolean().optional(),
+          price_range: z.string().optional(),
+          description_ar: z.string().optional(),
+          google_maps_url: z.string().optional(),
+          tier_required: z.string().optional(),
+          is_active: z.boolean().optional(),
         })).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
@@ -1067,27 +1067,23 @@ export const appRouter = router({
           let inserted = 0;
           let updated = 0;
           for (const city of input.cities) {
-            const existing = await db.getDestinationByName(city.nameAr);
+            const existing = await db.getDestinationById(city.city_id);
+            const cityData = {
+              nameAr: city.name_ar,
+              nameEn: city.name_en || city.name_ar,
+              slug: city.name_ar.toLowerCase().replace(/\s+/g, '-'),
+              titleAr: city.name_ar,
+              titleEn: city.name_en || city.name_ar,
+              descriptionAr: city.description_ar || '',
+              descriptionEn: city.description_en || '',
+              images: city.image_url ? [city.image_url] : [],
+              isActive: city.is_active !== false,
+            };
             if (existing) {
-              await db.updateDestination(existing.id, {
-                nameEn: city.nameEn || existing.nameEn,
-                descriptionAr: city.descriptionAr || existing.descriptionAr,
-                descriptionEn: city.descriptionEn || existing.descriptionEn,
-                isActive: city.isActive !== undefined ? city.isActive : existing.isActive,
-              });
+              await db.updateDestination(city.city_id, cityData);
               updated++;
             } else {
-              await db.createDestination({
-                nameAr: city.nameAr,
-                nameEn: city.nameEn || city.nameAr,
-                slug: city.nameAr.toLowerCase().replace(/\s+/g, '-'),
-                titleAr: city.nameAr,
-                titleEn: city.nameEn || city.nameAr,
-                descriptionAr: city.descriptionAr || '',
-                descriptionEn: city.descriptionEn || '',
-                images: city.image ? [city.image] : [],
-                isActive: city.isActive !== false,
-              });
+              await db.createDestinationWithId(city.city_id, cityData);
               inserted++;
             }
           }
@@ -1098,28 +1094,31 @@ export const appRouter = router({
           let inserted = 0;
           let updated = 0;
           for (const activity of input.activities) {
-            const existing = await db.getActivityByNameAndDestination(activity.name, activity.destinationId);
+            const existing = await db.getActivityById(activity.activity_id);
+            const tags = Array.isArray(activity.tags) ? activity.tags : 
+                        (typeof activity.tags === 'string' ? activity.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : []);
             const activityData = {
-              destinationId: activity.destinationId,
-              name: activity.name,
-              nameEn: activity.nameEn,
-              type: activity.type,
+              destinationId: activity.city_id,
+              name: activity.name_ar,
+              nameEn: activity.name_en,
+              type: activity.category,
               category: activity.category as any,
-              tags: activity.tags,
-              details: activity.details,
-              detailsEn: activity.detailsEn,
-              duration: activity.duration,
-              cost: activity.cost,
-              budgetLevel: activity.budgetLevel as any,
-              bestTimeOfDay: activity.bestTimeOfDay as any,
-              minTier: (activity.minTier || 'free') as any,
-              isActive: activity.isActive !== false,
+              tags,
+              details: activity.description_ar,
+              detailsEn: '',
+              duration: activity.duration_min ? `${activity.duration_min} دقيقة` : undefined,
+              cost: '',
+              budgetLevel: activity.budget_level as any,
+              bestTimeOfDay: activity.best_time as any,
+              minTier: (activity.tier_required || 'free') as any,
+              isActive: activity.is_active !== false,
+              googleMapsUrl: activity.google_maps_url,
             };
             if (existing) {
-              await db.updateActivity(existing.id, activityData);
+              await db.updateActivity(activity.activity_id, activityData);
               updated++;
             } else {
-              await db.createActivity(activityData);
+              await db.createActivityWithId(activity.activity_id, activityData);
               inserted++;
             }
           }
@@ -1130,25 +1129,24 @@ export const appRouter = router({
           let inserted = 0;
           let updated = 0;
           for (const acc of input.accommodations) {
-            const existing = await db.getAccommodationByNameAndDestination(acc.nameAr, acc.destinationId);
+            const existing = await db.getAccommodationById(acc.accommodation_id);
             const accData = {
-              destinationId: acc.destinationId,
-              nameAr: acc.nameAr,
-              nameEn: acc.nameEn,
-              descriptionAr: acc.descriptionAr,
-              descriptionEn: acc.descriptionEn,
+              destinationId: acc.city_id,
+              nameAr: acc.name_ar,
+              nameEn: acc.name_en,
+              descriptionAr: acc.description_ar,
+              descriptionEn: '',
               class: (acc.class || 'mid') as any,
-              priceRange: acc.priceRange,
-              googlePlaceId: acc.googlePlaceId,
-              googleMapsUrl: acc.googleMapsUrl,
-              rating: acc.rating,
-              isActive: acc.isActive !== false,
+              priceRange: acc.price_range,
+              googleMapsUrl: acc.google_maps_url,
+              minTier: acc.tier_required as any,
+              isActive: acc.is_active !== false,
             };
             if (existing) {
-              await db.updateAccommodation(existing.id, accData);
+              await db.updateAccommodation(acc.accommodation_id, accData);
               updated++;
             } else {
-              await db.createAccommodation(accData);
+              await db.createAccommodationWithId(acc.accommodation_id, accData);
               inserted++;
             }
           }

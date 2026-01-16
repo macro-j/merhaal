@@ -341,6 +341,46 @@ export async function deleteAccommodation(id: number) {
   await db.delete(accommodations).where(eq(accommodations.id, id));
 }
 
+export async function getActivityById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const { activities } = await import('../drizzle/schema');
+  const result = await db.select().from(activities).where(eq(activities.id, id));
+  return result[0] || null;
+}
+
+export async function getAccommodationById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const { accommodations } = await import('../drizzle/schema');
+  const result = await db.select().from(accommodations).where(eq(accommodations.id, id));
+  return result[0] || null;
+}
+
+export async function createDestinationWithId(id: number, data: any) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { destinations } = await import('../drizzle/schema');
+  const result = await db.insert(destinations).values({ id, ...data }).returning({ id: destinations.id });
+  return result[0];
+}
+
+export async function createActivityWithId(id: number, data: any) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { activities } = await import('../drizzle/schema');
+  const result = await db.insert(activities).values({ id, ...data }).returning({ id: activities.id });
+  return result[0];
+}
+
+export async function createAccommodationWithId(id: number, data: any) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { accommodations } = await import('../drizzle/schema');
+  const result = await db.insert(accommodations).values({ id, ...data }).returning({ id: accommodations.id });
+  return result[0];
+}
+
 export async function getActivityByNameAndDestination(name: string, destinationId: number) {
   const db = await getDb();
   if (!db) return null;

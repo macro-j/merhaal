@@ -73,49 +73,53 @@ Activities support enhanced metadata for smarter trip planning:
 
 ## Data Seeding (Excel/CSV Schema)
 
-### Activities CSV Columns:
+For bulk imports, use XLSX files with these exact sheet names: **Cities**, **Activities**, **Accommodations**
+
+### Cities Sheet Columns:
 | Column | Type | Required | Description |
 |--------|------|----------|-------------|
-| destinationId | integer | Yes | City/destination ID |
-| name | text | Yes | Arabic activity name |
-| nameEn | text | No | English name |
-| type | text | Yes | Activity type (طعام, تسوق, سياحة, etc.) |
-| category | text | No | مطاعم/تراث/طبيعة/تسوق/مغامرات/عائلي/ثقافة/ترفيه |
+| city_id | integer | Yes | Stable unique ID for upsert matching |
+| name_ar | text | Yes | Arabic city name |
+| name_en | text | Yes | English city name |
+| description_ar | text | No | Arabic description |
+| description_en | text | No | English description |
+| image_url | text | No | Image URL |
+| is_active | boolean | No | TRUE/FALSE, default: true |
+
+### Activities Sheet Columns:
+| Column | Type | Required | Description |
+|--------|------|----------|-------------|
+| activity_id | integer | Yes | Stable unique ID for upsert matching |
+| city_id | integer | Yes | City/destination ID |
+| name_ar | text | Yes | Arabic activity name |
+| name_en | text | No | English name |
+| description_ar | text | No | Arabic description |
+| category | text | Yes | مطاعم/تراث/طبيعة/تسوق/مغامرات/عائلي/ثقافة/ترفيه |
 | tags | text | No | Comma-separated keywords |
-| details | text | No | Arabic description |
-| detailsEn | text | No | English description |
-| duration | text | No | e.g., "2 ساعة" |
-| cost | text | No | Price in SAR |
-| budgetLevel | text | No | low/medium/high |
-| bestTimeOfDay | text | No | morning/afternoon/evening/anytime |
-| minTier | text | No | free/smart/professional |
-| isActive | boolean | No | Default: true |
+| budget_level | text | No | low/medium/high |
+| best_time | text | No | morning/afternoon/evening/anytime |
+| duration_min | integer | No | Duration in minutes |
+| is_indoor | boolean | No | TRUE/FALSE |
+| is_unique | boolean | No | TRUE/FALSE |
+| google_maps_url | text | No | Direct maps URL |
+| tier_required | text | No | free/smart/professional |
+| is_active | boolean | No | TRUE/FALSE, default: true |
 
-### Accommodations CSV Columns:
+### Accommodations Sheet Columns:
 | Column | Type | Required | Description |
 |--------|------|----------|-------------|
-| destinationId | integer | Yes | City/destination ID |
-| nameAr | text | Yes | Arabic name |
-| nameEn | text | No | English name |
-| descriptionAr | text | No | Arabic description |
-| descriptionEn | text | No | English description |
+| accommodation_id | integer | Yes | Stable unique ID for upsert matching |
+| city_id | integer | Yes | City/destination ID |
+| name_ar | text | Yes | Arabic name |
+| name_en | text | No | English name |
 | class | text | Yes | economy/mid/luxury |
-| priceRange | text | No | e.g., "300-500 ريال/ليلة" |
-| googlePlaceId | text | No | Google Places ID |
-| googleMapsUrl | text | No | Direct maps URL |
-| rating | decimal | No | 0-5 rating |
-| isActive | boolean | No | Default: true |
+| price_range | text | No | e.g., "300-500 ريال/ليلة" |
+| description_ar | text | No | Arabic description |
+| google_maps_url | text | No | Direct maps URL |
+| tier_required | text | No | free/smart/professional |
+| is_active | boolean | No | TRUE/FALSE, default: true |
 
-### Destinations CSV Columns:
-| Column | Type | Required | Description |
-|--------|------|----------|-------------|
-| nameAr | text | Yes | Arabic city name |
-| nameEn | text | No | English city name |
-| description | text | No | Arabic description |
-| descriptionEn | text | No | English description |
-| image | text | No | Image URL |
-| region | text | No | Region name |
-| isActive | boolean | No | Default: true |
+**Import Behavior**: Upsert matching is based on stable IDs only (city_id, activity_id, accommodation_id). Existing records are updated; new IDs are inserted.
 
 ## Share Plan Feature
 - Smart and Professional tier users can generate shareable URLs

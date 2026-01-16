@@ -43,14 +43,20 @@ const initialDatasetState: DatasetState = {
   isProcessing: false,
 };
 
-const CITIES_REQUIRED_HEADERS = ['nameAr'];
-const CITIES_OPTIONAL_HEADERS = ['nameEn', 'descriptionAr', 'descriptionEn', 'image', 'region', 'isActive'];
+const CITIES_REQUIRED_HEADERS = ['city_id', 'name_ar', 'name_en'];
+const CITIES_OPTIONAL_HEADERS = ['description_ar', 'description_en', 'image_url', 'is_active'];
 
-const ACTIVITIES_REQUIRED_HEADERS = ['destinationId', 'name', 'type'];
-const ACTIVITIES_OPTIONAL_HEADERS = ['nameEn', 'category', 'tags', 'details', 'detailsEn', 'duration', 'cost', 'budgetLevel', 'bestTimeOfDay', 'minTier', 'isActive'];
+const ACTIVITIES_REQUIRED_HEADERS = ['activity_id', 'city_id', 'name_ar', 'category'];
+const ACTIVITIES_OPTIONAL_HEADERS = ['name_en', 'description_ar', 'tags', 'budget_level', 'best_time', 'duration_min', 'is_indoor', 'is_unique', 'google_maps_url', 'tier_required', 'is_active'];
 
-const ACCOMMODATIONS_REQUIRED_HEADERS = ['destinationId', 'nameAr', 'class'];
-const ACCOMMODATIONS_OPTIONAL_HEADERS = ['nameEn', 'descriptionAr', 'descriptionEn', 'priceRange', 'googlePlaceId', 'googleMapsUrl', 'rating', 'isActive'];
+const ACCOMMODATIONS_REQUIRED_HEADERS = ['accommodation_id', 'city_id', 'name_ar', 'class'];
+const ACCOMMODATIONS_OPTIONAL_HEADERS = ['name_en', 'price_range', 'description_ar', 'google_maps_url', 'tier_required', 'is_active'];
+
+const SHEET_NAMES = {
+  cities: 'Cities',
+  activities: 'Activities',
+  accommodations: 'Accommodations',
+};
 
 const VALID_TIERS = ['free', 'smart', 'professional'];
 const VALID_BUDGET_LEVELS = ['low', 'medium', 'high'];
@@ -103,13 +109,13 @@ export default function AdminImport() {
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      const workbook = XLSX.read(arrayBuffer, { type: 'array', codepage: 65001 });
       const sheetNames = workbook.SheetNames;
       
-      const defaultSheet = sheetNames.find(s => 
-        s.toLowerCase() === datasetType.toLowerCase() ||
-        s.toLowerCase() === (datasetType === 'cities' ? 'destinations' : datasetType)
-      ) || sheetNames[0];
+      const expectedSheet = SHEET_NAMES[datasetType];
+      const defaultSheet = sheetNames.find(s => s === expectedSheet) ||
+                          sheetNames.find(s => s.toLowerCase() === expectedSheet.toLowerCase()) ||
+                          sheetNames[0];
 
       setter(prev => ({
         ...prev,
@@ -161,89 +167,111 @@ export default function AdminImport() {
     }
 
     const seenIds = new Set<string>();
-    const existingCityIds = new Set((existingCities || []).map(c => c.id));
 
     jsonData.forEach((row: any, index: number) => {
       const rowNum = index + 2;
 
       if (datasetType === 'cities') {
-        if (!row.nameAr || String(row.nameAr).trim() === '') {
-          errors.push({ row: rowNum, column: 'nameAr', reason: 'اسم المدينة بالعربية مطلوب' });
+        if (!row.city_id || String(row.city_id).trim() === '') {
+          errors.push({ row: rowNum, column: 'city_id', reason: 'معرف المدينة مطلوب' });
+        } else if (seenIds.has(String(row.city_id))) {
+          errors.push({ row: rowNum, column: 'city_id', reason: 'معرف مكرر' });
+        } else {
+          seenIds.add(String(row.city_id));
         }
-        const id = row.id || row.nameAr;
-        if (seenIds.has(id)) {
-          errors.push({ row: rowNum, column: 'nameAr', reason: 'اسم مكرر' });
+        if (!row.name_ar || String(row.name_ar).trim() === '') {
+          errors.push({ row: rowNum, column: 'name_ar', reason: 'اسم المدينة بالعربية مطلوب' });
         }
-        seenIds.add(id);
       }
 
       if (datasetType === 'activities') {
-        if (!row.name || String(row.name).trim() === '') {
-          errors.push({ row: rowNum, column: 'name', reason: 'اسم النشاط مطلوب' });
-        }
-        if (!row.type || String(row.type).trim() === '') {
-          errors.push({ row: rowNum, column: 'type', reason: 'نوع النشاط مطلوب' });
-        }
-        if (!row.destinationId) {
-          errors.push({ row: rowNum, column: 'destinationId', reason: 'معرف المدينة مطلوب' });
+        if (!row.activity_id || String(row.activity_id).trim() === '') {
+          errors.push({ row: rowNum, column: 'activity_id', reason: 'معرف النشاط مطلوب' });
+        } else if (seenIds.has(String(row.activity_id))) {
+          errors.push({ row: rowNum, column: 'activity_id', reason: 'معرف مكرر' });
         } else {
-          const destId = parseInt(row.destinationId);
-          if (isNaN(destId)) {
-            errors.push({ row: rowNum, column: 'destinationId', reason: 'معرف المدينة يجب أن يكون رقمًا' });
-          } else if (!existingCityIds.has(destId) && !cities.data.some((c: any) => c.id === destId)) {
-            errors.push({ row: rowNum, column: 'destinationId', reason: `المدينة ${destId} غير موجودة` });
-          }
+          seenIds.add(String(row.activity_id));
         }
-        if (row.minTier && !VALID_TIERS.includes(row.minTier.toLowerCase())) {
-          errors.push({ row: rowNum, column: 'minTier', reason: `قيمة غير صالحة: ${row.minTier}` });
+        if (!row.name_ar || String(row.name_ar).trim() === '') {
+          errors.push({ row: rowNum, column: 'name_ar', reason: 'اسم النشاط بالعربية مطلوب' });
         }
-        if (row.budgetLevel && !VALID_BUDGET_LEVELS.includes(row.budgetLevel.toLowerCase())) {
-          errors.push({ row: rowNum, column: 'budgetLevel', reason: `قيمة غير صالحة: ${row.budgetLevel}` });
+        if (!row.city_id) {
+          errors.push({ row: rowNum, column: 'city_id', reason: 'معرف المدينة مطلوب' });
         }
-        if (row.bestTimeOfDay && !VALID_BEST_TIMES.includes(row.bestTimeOfDay.toLowerCase())) {
-          errors.push({ row: rowNum, column: 'bestTimeOfDay', reason: `قيمة غير صالحة: ${row.bestTimeOfDay}` });
+        if (!row.category || String(row.category).trim() === '') {
+          errors.push({ row: rowNum, column: 'category', reason: 'فئة النشاط مطلوبة' });
+        }
+        if (row.tier_required && !VALID_TIERS.includes(String(row.tier_required).toLowerCase())) {
+          errors.push({ row: rowNum, column: 'tier_required', reason: `قيمة غير صالحة: ${row.tier_required}` });
+        }
+        if (row.budget_level && !VALID_BUDGET_LEVELS.includes(String(row.budget_level).toLowerCase())) {
+          errors.push({ row: rowNum, column: 'budget_level', reason: `قيمة غير صالحة: ${row.budget_level}` });
+        }
+        if (row.best_time && !VALID_BEST_TIMES.includes(String(row.best_time).toLowerCase())) {
+          errors.push({ row: rowNum, column: 'best_time', reason: `قيمة غير صالحة: ${row.best_time}` });
         }
       }
 
       if (datasetType === 'accommodations') {
-        if (!row.nameAr || String(row.nameAr).trim() === '') {
-          errors.push({ row: rowNum, column: 'nameAr', reason: 'اسم الإقامة بالعربية مطلوب' });
-        }
-        if (!row.destinationId) {
-          errors.push({ row: rowNum, column: 'destinationId', reason: 'معرف المدينة مطلوب' });
+        if (!row.accommodation_id || String(row.accommodation_id).trim() === '') {
+          errors.push({ row: rowNum, column: 'accommodation_id', reason: 'معرف الإقامة مطلوب' });
+        } else if (seenIds.has(String(row.accommodation_id))) {
+          errors.push({ row: rowNum, column: 'accommodation_id', reason: 'معرف مكرر' });
         } else {
-          const destId = parseInt(row.destinationId);
-          if (isNaN(destId)) {
-            errors.push({ row: rowNum, column: 'destinationId', reason: 'معرف المدينة يجب أن يكون رقمًا' });
-          } else if (!existingCityIds.has(destId) && !cities.data.some((c: any) => c.id === destId)) {
-            errors.push({ row: rowNum, column: 'destinationId', reason: `المدينة ${destId} غير موجودة` });
-          }
+          seenIds.add(String(row.accommodation_id));
         }
-        if (row.class && !VALID_ACC_CLASSES.includes(row.class.toLowerCase())) {
+        if (!row.name_ar || String(row.name_ar).trim() === '') {
+          errors.push({ row: rowNum, column: 'name_ar', reason: 'اسم الإقامة بالعربية مطلوب' });
+        }
+        if (!row.city_id) {
+          errors.push({ row: rowNum, column: 'city_id', reason: 'معرف المدينة مطلوب' });
+        }
+        if (row.class && !VALID_ACC_CLASSES.includes(String(row.class).toLowerCase())) {
           errors.push({ row: rowNum, column: 'class', reason: `قيمة غير صالحة: ${row.class}` });
+        }
+        if (row.tier_required && !VALID_TIERS.includes(String(row.tier_required).toLowerCase())) {
+          errors.push({ row: rowNum, column: 'tier_required', reason: `قيمة غير صالحة: ${row.tier_required}` });
         }
       }
     });
 
     const normalizedData = jsonData.map((row: any) => {
       const normalized: any = { ...row };
-      if ('isActive' in normalized) {
-        normalized.isActive = normalizeBoolean(normalized.isActive);
+      if ('is_active' in normalized) {
+        normalized.is_active = normalizeBoolean(normalized.is_active);
       }
-      if ('minTier' in normalized && normalized.minTier) {
-        normalized.minTier = normalized.minTier.toLowerCase();
+      if ('is_indoor' in normalized) {
+        normalized.is_indoor = normalizeBoolean(normalized.is_indoor);
       }
-      if ('budgetLevel' in normalized && normalized.budgetLevel) {
-        normalized.budgetLevel = normalized.budgetLevel.toLowerCase();
+      if ('is_unique' in normalized) {
+        normalized.is_unique = normalizeBoolean(normalized.is_unique);
       }
-      if ('bestTimeOfDay' in normalized && normalized.bestTimeOfDay) {
-        normalized.bestTimeOfDay = normalized.bestTimeOfDay.toLowerCase();
+      if ('tier_required' in normalized && normalized.tier_required) {
+        normalized.tier_required = String(normalized.tier_required).toLowerCase();
+      }
+      if ('budget_level' in normalized && normalized.budget_level) {
+        normalized.budget_level = String(normalized.budget_level).toLowerCase();
+      }
+      if ('best_time' in normalized && normalized.best_time) {
+        normalized.best_time = String(normalized.best_time).toLowerCase();
       }
       if ('class' in normalized && normalized.class) {
-        normalized.class = normalized.class.toLowerCase();
+        normalized.class = String(normalized.class).toLowerCase();
       }
       if ('tags' in normalized && typeof normalized.tags === 'string') {
         normalized.tags = normalized.tags.split(',').map((t: string) => t.trim()).filter(Boolean);
+      }
+      if ('city_id' in normalized) {
+        normalized.city_id = parseInt(String(normalized.city_id), 10);
+      }
+      if ('activity_id' in normalized) {
+        normalized.activity_id = parseInt(String(normalized.activity_id), 10);
+      }
+      if ('accommodation_id' in normalized) {
+        normalized.accommodation_id = parseInt(String(normalized.accommodation_id), 10);
+      }
+      if ('duration_min' in normalized && normalized.duration_min) {
+        normalized.duration_min = parseInt(String(normalized.duration_min), 10);
       }
       return normalized;
     });
