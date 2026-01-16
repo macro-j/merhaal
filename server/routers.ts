@@ -1011,7 +1011,7 @@ export const appRouter = router({
     bulkImport: protectedProcedure
       .input(z.object({
         cities: z.array(z.object({
-          city_id: z.number(),
+          city_id: z.string(),
           name_ar: z.string(),
           name_en: z.string().optional(),
           description_ar: z.string().optional(),
@@ -1020,8 +1020,8 @@ export const appRouter = router({
           is_active: z.boolean().optional(),
         })).optional(),
         activities: z.array(z.object({
-          activity_id: z.number(),
-          city_id: z.number(),
+          activity_id: z.string(),
+          city_id: z.string(),
           name_ar: z.string(),
           name_en: z.string().optional(),
           description_ar: z.string().optional(),
@@ -1037,8 +1037,8 @@ export const appRouter = router({
           is_active: z.boolean().optional(),
         })).optional(),
         accommodations: z.array(z.object({
-          accommodation_id: z.number(),
-          city_id: z.number(),
+          accommodation_id: z.string(),
+          city_id: z.string(),
           name_ar: z.string(),
           name_en: z.string().optional(),
           class: z.string(),
@@ -1067,7 +1067,8 @@ export const appRouter = router({
           let inserted = 0;
           let updated = 0;
           for (const city of input.cities) {
-            const existing = await db.getDestinationById(city.city_id);
+            const cityId = parseInt(String(city.city_id), 10);
+            const existing = await db.getDestinationById(cityId);
             const cityData = {
               nameAr: city.name_ar,
               nameEn: city.name_en || city.name_ar,
@@ -1080,10 +1081,10 @@ export const appRouter = router({
               isActive: city.is_active !== false,
             };
             if (existing) {
-              await db.updateDestination(city.city_id, cityData);
+              await db.updateDestination(cityId, cityData);
               updated++;
             } else {
-              await db.createDestinationWithId(city.city_id, cityData);
+              await db.createDestinationWithId(cityId, cityData);
               inserted++;
             }
           }
@@ -1094,11 +1095,13 @@ export const appRouter = router({
           let inserted = 0;
           let updated = 0;
           for (const activity of input.activities) {
-            const existing = await db.getActivityById(activity.activity_id);
+            const activityId = parseInt(String(activity.activity_id), 10);
+            const cityId = parseInt(String(activity.city_id), 10);
+            const existing = await db.getActivityById(activityId);
             const tags = Array.isArray(activity.tags) ? activity.tags : 
                         (typeof activity.tags === 'string' ? activity.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : []);
             const activityData = {
-              destinationId: activity.city_id,
+              destinationId: cityId,
               name: activity.name_ar,
               nameEn: activity.name_en,
               type: activity.category,
@@ -1115,10 +1118,10 @@ export const appRouter = router({
               googleMapsUrl: activity.google_maps_url,
             };
             if (existing) {
-              await db.updateActivity(activity.activity_id, activityData);
+              await db.updateActivity(activityId, activityData);
               updated++;
             } else {
-              await db.createActivityWithId(activity.activity_id, activityData);
+              await db.createActivityWithId(activityId, activityData);
               inserted++;
             }
           }
@@ -1129,9 +1132,11 @@ export const appRouter = router({
           let inserted = 0;
           let updated = 0;
           for (const acc of input.accommodations) {
-            const existing = await db.getAccommodationById(acc.accommodation_id);
+            const accId = parseInt(String(acc.accommodation_id), 10);
+            const cityId = parseInt(String(acc.city_id), 10);
+            const existing = await db.getAccommodationById(accId);
             const accData = {
-              destinationId: acc.city_id,
+              destinationId: cityId,
               nameAr: acc.name_ar,
               nameEn: acc.name_en,
               descriptionAr: acc.description_ar,
@@ -1143,10 +1148,10 @@ export const appRouter = router({
               isActive: acc.is_active !== false,
             };
             if (existing) {
-              await db.updateAccommodation(acc.accommodation_id, accData);
+              await db.updateAccommodation(accId, accData);
               updated++;
             } else {
-              await db.createAccommodationWithId(acc.accommodation_id, accData);
+              await db.createAccommodationWithId(accId, accData);
               inserted++;
             }
           }

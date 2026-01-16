@@ -242,13 +242,13 @@ export default function AdminImport() {
         normalized.tags = normalized.tags.split(',').map((t: string) => t.trim()).filter(Boolean);
       }
       if ('city_id' in normalized) {
-        normalized.city_id = parseInt(String(normalized.city_id), 10);
+        normalized.city_id = String(normalized.city_id).trim();
       }
       if ('activity_id' in normalized) {
-        normalized.activity_id = parseInt(String(normalized.activity_id), 10);
+        normalized.activity_id = String(normalized.activity_id).trim();
       }
       if ('accommodation_id' in normalized) {
-        normalized.accommodation_id = parseInt(String(normalized.accommodation_id), 10);
+        normalized.accommodation_id = String(normalized.accommodation_id).trim();
       }
       if ('duration_min' in normalized && normalized.duration_min) {
         normalized.duration_min = parseInt(String(normalized.duration_min), 10);
@@ -523,13 +523,13 @@ export default function AdminImport() {
         normalized.tags = normalized.tags.split(',').map((t: string) => t.trim()).filter(Boolean);
       }
       if ('city_id' in normalized) {
-        normalized.city_id = parseInt(String(normalized.city_id), 10);
+        normalized.city_id = String(normalized.city_id).trim();
       }
       if ('activity_id' in normalized) {
-        normalized.activity_id = parseInt(String(normalized.activity_id), 10);
+        normalized.activity_id = String(normalized.activity_id).trim();
       }
       if ('accommodation_id' in normalized) {
-        normalized.accommodation_id = parseInt(String(normalized.accommodation_id), 10);
+        normalized.accommodation_id = String(normalized.accommodation_id).trim();
       }
       if ('duration_min' in normalized && normalized.duration_min) {
         normalized.duration_min = parseInt(String(normalized.duration_min), 10);
