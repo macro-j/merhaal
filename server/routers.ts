@@ -61,6 +61,7 @@ export const appRouter = router({
             email: input.email,
             role: 'user',
             tier: 'free',
+            city: input.city || null,
           },
         };
       }),

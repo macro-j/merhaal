@@ -71,6 +71,80 @@ export async function seedAdminIfNeeded() {
   }
 }
 
+export async function seedDestinationsIfEmpty() {
+  const db = await getDb();
+  if (!db) return;
+  
+  try {
+    const { destinations } = await import('../drizzle/schema');
+    const existing = await db.select().from(destinations).limit(1);
+    if (existing.length > 0) return;
+    
+    const initialDestinations = [
+      {
+        slug: 'riyadh',
+        nameAr: 'الرياض',
+        nameEn: 'Riyadh',
+        titleAr: 'قلب المملكة النابض',
+        titleEn: 'The Beating Heart of the Kingdom',
+        descriptionAr: 'عاصمة تجمع بين التراث والحداثة مع أسواق عريقة ومتاحف وواجهات حديثة',
+        descriptionEn: 'A capital that combines heritage and modernity with traditional markets, museums and modern facades',
+        images: ['/images/cities/riyadh-hero.jpg'],
+        isActive: true,
+      },
+      {
+        slug: 'jeddah',
+        nameAr: 'جدة',
+        nameEn: 'Jeddah',
+        titleAr: 'عروس البحر الأحمر',
+        titleEn: 'Bride of the Red Sea',
+        descriptionAr: 'مدينة ساحلية تاريخية تمزج بين الحضارة والبحر مع كورنيش خلاب وأسواق تقليدية',
+        descriptionEn: 'A historic coastal city blending civilization and sea with a stunning corniche and traditional markets',
+        images: ['/images/cities/jeddah-hero.jpg'],
+        isActive: true,
+      },
+      {
+        slug: 'taif',
+        nameAr: 'الطائف',
+        nameEn: 'Taif',
+        titleAr: 'مصيف العرب',
+        titleEn: 'Summer Resort of Arabia',
+        descriptionAr: 'مدينة الورد والفواكه في أعالي جبال الحجاز',
+        descriptionEn: 'City of roses and fruits in the highlands of Hijaz',
+        images: ['/images/cities/taif-hero.jpg'],
+        isActive: true,
+      },
+      {
+        slug: 'abha',
+        nameAr: 'أبها',
+        nameEn: 'Abha',
+        titleAr: 'سيدة الضباب',
+        titleEn: 'Lady of the Fog',
+        descriptionAr: 'مدينة جبلية باردة بطبيعة خلابة ومناظر ساحرة في قلب عسير',
+        descriptionEn: 'A cool mountain city with stunning nature and charming views in the heart of Asir',
+        images: ['/images/cities/abha-hero.jpg'],
+        isActive: true,
+      },
+      {
+        slug: 'alula',
+        nameAr: 'العلا',
+        nameEn: 'AlUla',
+        titleAr: 'متحف في الهواء الطلق',
+        titleEn: 'An Open-Air Museum',
+        descriptionAr: 'واحة تاريخية بين الصخور الضخمة وآثار الحضارات القديمة',
+        descriptionEn: 'A historical oasis among massive rocks and ancient civilization ruins',
+        images: ['/images/cities/alula-hero.jpg'],
+        isActive: true,
+      },
+    ];
+    
+    await db.insert(destinations).values(initialDestinations);
+    console.log('[Seed] Inserted initial destinations');
+  } catch (error) {
+    console.warn('[Seed] Could not seed destinations:', error);
+  }
+}
+
 export async function getAllDestinations() {
   const db = await getDb();
   if (!db) return [];

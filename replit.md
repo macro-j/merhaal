@@ -57,6 +57,11 @@ A full-stack trip planning application for Saudi Arabia featuring destination gu
 - Tier-enforced activity limits per day
 
 ## Recent Changes
+- 2026-01-16: Fix discover city and user city display
+  - Added automatic destination seeding on server startup (5 cities matching Home.tsx)
+  - Fixed register mutation to return city in user object
+  - City discovery now works (CityDetailModal fetches by nameAr/nameEn from DB)
+  - User city displays correctly after registration (from auth.me endpoint)
 - 2026-01-16: UX finalization and flow improvements
   - City field displayed in dashboard header with MapPin icon
   - Pricing page redirects to /login for unauthenticated users

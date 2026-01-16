@@ -7,7 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { seedAdminIfNeeded } from "../db";
+import { seedAdminIfNeeded, seedDestinationsIfEmpty } from "../db";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -60,6 +60,7 @@ async function startServer() {
 
   server.listen(port, async () => {
     console.log(`Server running on http://localhost:${port}/`);
+    await seedDestinationsIfEmpty();
     await seedAdminIfNeeded();
   });
 }
