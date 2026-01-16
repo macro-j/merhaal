@@ -6,7 +6,7 @@ A full-stack trip planning application for Saudi Arabia featuring destination gu
 ## Tech Stack
 - **Frontend**: React 19 with TypeScript, Vite 7, Tailwind CSS 4
 - **Backend**: Express with tRPC
-- **Database**: MySQL (using Drizzle ORM)
+- **Database**: PostgreSQL (Replit built-in, using Drizzle ORM)
 - **State Management**: TanStack React Query
 
 ## Project Structure
@@ -30,19 +30,19 @@ A full-stack trip planning application for Saudi Arabia featuring destination gu
 - **Production**: `npm run start`
 
 ## Database
-- Uses MySQL with Drizzle ORM
+- Uses PostgreSQL (Replit built-in) with Drizzle ORM
 - Schema defined in `drizzle/schema.ts`
 - Migrations: `npm run db:push`
 
 ## Environment Variables
-- `DATABASE_URL`: MySQL connection string (required for database features)
+- `DATABASE_URL`: PostgreSQL connection string (auto-provided by Replit)
 - `PORT`: Server port (default: 5000)
 - Optional: `VITE_APP_TITLE`, `VITE_APP_LOGO`, `VITE_ANALYTICS_ENDPOINT`
 
 ## User Tier System
-- **Free**: 1 day max, 3 activities, 1 saved trip
-- **Smart**: 10 days max, 5 activities, 3 saved trips
-- **Professional**: Unlimited days, activities, and trips
+- **Free**: 1 day max, 3 activities/day, 1 saved trip
+- **Smart**: 10 days max, 5 activities/day, 3 saved trips
+- **Professional**: Unlimited days, 10 activities/day, unlimited trips
 
 ## Admin Dashboard
 - Located at `/admin` (admin role required)
@@ -50,7 +50,21 @@ A full-stack trip planning application for Saudi Arabia featuring destination gu
 - Manage activities/places: `/admin/activities`
 - Manage users (tier/role updates): `/admin/users`
 
+## Trip Generation
+- Daily itinerary with Arabic day titles (اليوم الأول, اليوم الثاني, etc.)
+- Time blocks: صباحًا (09:00), ظهرًا (12:00), عصرًا (15:00), مساءً (18:00)
+- Activities strictly from selected city via destinationId
+- Tier-enforced activity limits per day
+
 ## Recent Changes
+- 2026-01-16: UX finalization and trip generation improvements
+  - Added day titles and time periods to itinerary structure
+  - Enforced tier-based activity limits per day
+  - Added upgrade request flow (no payments)
+  - Added optional city field to registration
+  - Fixed Arabic tanween (ًا) across all UI
+  - Fixed sidebar RTL support
+  - Migrated database from MySQL to PostgreSQL
 - 2026-01-15: Added MVP backend + admin dashboard
   - Admin CRUD routes for cities, activities, and users
   - Admin dashboard UI (AdminLayout, AdminDashboard, AdminCities, AdminActivities, AdminUsers)
