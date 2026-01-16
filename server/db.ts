@@ -369,3 +369,40 @@ export async function markSupportMessageResolved(id: number, isResolved: boolean
   const { supportMessages } = await import('../drizzle/schema');
   await db.update(supportMessages).set({ isResolved }).where(eq(supportMessages.id, id));
 }
+
+export async function deleteSupportMessage(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { supportMessages } = await import('../drizzle/schema');
+  await db.delete(supportMessages).where(eq(supportMessages.id, id));
+}
+
+export async function getTripById(tripId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const { trips } = await import('../drizzle/schema');
+  const result = await db.select().from(trips).where(eq(trips.id, tripId)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function getTripByShareToken(shareToken: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const { trips } = await import('../drizzle/schema');
+  const result = await db.select().from(trips).where(eq(trips.shareToken, shareToken)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function updateTripShareToken(tripId: number, shareToken: string) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { trips } = await import('../drizzle/schema');
+  await db.update(trips).set({ shareToken, isPublic: true, updatedAt: new Date() }).where(eq(trips.id, tripId));
+}
+
+export async function removeTripShareToken(tripId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { trips } = await import('../drizzle/schema');
+  await db.update(trips).set({ shareToken: null, isPublic: false, updatedAt: new Date() }).where(eq(trips.id, tripId));
+}

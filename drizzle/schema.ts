@@ -42,17 +42,27 @@ export const destinations = pgTable("destinations", {
 export type Destination = typeof destinations.$inferSelect;
 export type InsertDestination = typeof destinations.$inferInsert;
 
+export const categoryEnum = pgEnum("activity_category", ["مطاعم", "تراث", "طبيعة", "تسوق", "مغامرات", "عائلي", "ثقافة", "ترفيه"]);
+export const budgetLevelEnum = pgEnum("budget_level", ["low", "medium", "high"]);
+export const bestTimeEnum = pgEnum("best_time", ["morning", "afternoon", "evening", "anytime"]);
+
 export const activities = pgTable("activities", {
   id: serial("id").primaryKey(),
   destinationId: integer("destination_id").notNull(),
   name: varchar("name", { length: 200 }).notNull(),
   nameEn: varchar("name_en", { length: 200 }),
   type: varchar("type", { length: 100 }).notNull(),
+  category: categoryEnum("category"),
+  tags: json("tags").$type<string[]>(),
+  budgetLevel: budgetLevelEnum("budget_level").default("medium"),
+  bestTimeOfDay: bestTimeEnum("best_time_of_day").default("anytime"),
   duration: varchar("duration", { length: 50 }),
   cost: decimal("cost", { precision: 10, scale: 2 }).default("0"),
   icon: varchar("icon", { length: 50 }),
   minTier: tierEnum("min_tier").default("free").notNull(),
   details: text("details"),
+  detailsEn: text("details_en"),
+  googleMapsUrl: varchar("google_maps_url", { length: 500 }),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -106,6 +116,8 @@ export const trips = pgTable("trips", {
   interests: json("interests").$type<string[]>().notNull(),
   accommodationType: varchar("accommodation_type", { length: 50 }),
   plan: json("plan").$type<any>(),
+  shareToken: varchar("share_token", { length: 64 }),
+  isPublic: boolean("is_public").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

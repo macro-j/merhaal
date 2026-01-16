@@ -4,13 +4,24 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
-import { Loader2, CheckCircle, XCircle, Mail, User, MessageSquare } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, Mail, User, MessageSquare, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useLocation } from "wouter";
-import { useEffect } from "react";
 
 export default function AdminSupport() {
   const { user, loading } = useAuth();
   const [, setLocation] = useLocation();
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const { data: messages, isLoading, refetch } = trpc.admin.support.list.useQuery(undefined, {
     enabled: !!user && user.role === 'admin',
@@ -18,6 +29,13 @@ export default function AdminSupport() {
 
   const markResolvedMutation = trpc.admin.support.markResolved.useMutation({
     onSuccess: () => refetch(),
+  });
+
+  const deleteMutation = trpc.admin.support.delete.useMutation({
+    onSuccess: () => {
+      refetch();
+      setDeleteId(null);
+    },
   });
 
   useEffect(() => {
@@ -111,7 +129,15 @@ export default function AdminSupport() {
                     {message.message}
                   </p>
                   
-                  <div className="flex justify-end">
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setDeleteId(message.id)}
+                    >
+                      <Trash2 className="w-4 h-4 me-2" />
+                      حذف
+                    </Button>
                     <Button
                       variant={message.isResolved ? 'outline' : 'default'}
                       size="sm"
@@ -139,6 +165,26 @@ export default function AdminSupport() {
             ))}
           </div>
         )}
+
+        <AlertDialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+              <AlertDialogDescription>
+                هل أنت متأكد من حذف هذه الرسالة؟ لا يمكن التراجع عن هذا الإجراء.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex-row-reverse gap-2">
+              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteId && deleteMutation.mutate({ id: deleteId })}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                حذف
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AdminLayout>
   );

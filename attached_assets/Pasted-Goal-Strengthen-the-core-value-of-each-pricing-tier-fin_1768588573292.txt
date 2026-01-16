@@ -1,0 +1,164 @@
+Goal: Strengthen the core value of each pricing tier, finalize admin tools, and prepare the system for high-quality data seeding via Excel.
+Apply only minimal, targeted changes. No redesign. No external paid APIs.
+
+1) Make each tier deliver a clear, tangible value
+Free (مجاني)
+
+Limit to:
+
+1 day only
+
+3 activities per day
+
+Short descriptions
+
+Allow saving only 1 plan.
+
+Hide PDF export, advanced labels, and smart features.
+
+Smart (ذكي)
+
+Allow:
+
+2–10 days
+
+4–5 activities per day
+
+Richer descriptions
+
+Re-generate / re-order a full day
+
+Save up to 3 plans
+
+Add Share Plan Link (public read-only URL) instead of PDF.
+
+No ads.
+
+Professional (احترافي)
+
+Unlimited:
+
+days
+
+saved plans
+
+6–8 activities per day when available.
+
+Prefer unique / non-touristy activities.
+
+Enable:
+
+PDF export
+
+“Best time to visit” labels (rule-based, no weather API)
+
+Accommodation recommendations by class
+
+In-app support messaging
+
+Clearly mark “ميزات قادمة حصريًا للاحترافي”.
+
+Ensure all limits are enforced server-side, not UI-only.
+
+2) Optional AI Chat (Professional – lightweight MVP)
+
+Add a simple AI chat panel inside the Trip Details page for Professional users only.
+
+Scope (keep it simple):
+
+User can ask for suggestions like:
+
+“خل اليوم الثاني مطاعم أكثر”
+
+“قلل التسوق وزد الطبيعة”
+
+The assistant returns suggested changes (textual proposal).
+
+User must click “Apply changes” to update the plan.
+
+Do NOT implement autonomous plan mutation.
+
+Hide chat for Free/Smart.
+
+(If no AI key is configured, show a clear message: “الميزة ستتوفر قريبًا للاحترافي”.)
+
+3) Admin Support Inbox improvements
+
+In /admin/support:
+
+Add Delete message button (with confirmation).
+
+Keep existing resolve/reopen logic.
+
+Deletion can be hard delete (simple).
+
+4) Prepare the system for “legendary” generation via data (critical)
+Enforce activity metadata usage:
+
+Ensure generation logic actively uses:
+
+category (مطاعم / تراث / طبيعة / تسوق / مغامرات / عائلي)
+
+tags (array)
+
+budgetLevel (low / medium / high)
+
+bestTimeOfDay (morning / afternoon / evening)
+
+duration
+
+cityId
+
+Plans must clearly differ when:
+
+Interests change
+
+Budget changes
+
+Accommodation class changes
+
+Fallback logic should be used only when DB data is insufficient and must be labeled.
+
+5) Excel / CSV data seeding preparation (NO data yet)
+
+Define and document the exact columns expected for:
+
+Cities
+
+Activities
+
+Accommodations
+
+Ensure backend can later accept:
+
+CSV upload OR
+
+Seed script from CSV
+
+Do NOT implement import UI yet.
+
+Update documentation with:
+
+Required columns
+
+Example values
+
+Validation rules
+
+(This prepares for the next step without extra cost now.)
+
+Output requirements
+
+Short confirmation summary.
+
+Exact files changed.
+
+Include documented column schema for Excel (tables/fields only).
+
+Constraints
+
+Minimal changes only
+
+No redesign
+
+No paid APIs required

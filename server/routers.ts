@@ -5,6 +5,7 @@ import * as db from "./db";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
 const JWT_EXPIRES_IN = "7d";
@@ -221,7 +222,7 @@ export const appRouter = router({
         const tierLimits = {
           free: { maxDays: 1, maxTrips: 1, maxActivitiesPerDay: 3 },
           smart: { maxDays: 10, maxTrips: 3, maxActivitiesPerDay: 5 },
-          professional: { maxDays: 999, maxTrips: 999, maxActivitiesPerDay: 10 },
+          professional: { maxDays: 999, maxTrips: 999, maxActivitiesPerDay: 8 },
         };
         const limits = tierLimits[userTier as keyof typeof tierLimits];
 
@@ -425,6 +426,74 @@ export const appRouter = router({
         
         await db.deleteTrip(input.tripId, decoded.userId);
         return { success: true };
+      }),
+
+    generateShareLink: protectedProcedure
+      .input(z.object({ tripId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const authHeader = ctx.req.headers.authorization;
+        if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        
+        const token = authHeader.substring(7);
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+        const user = await db.getUserById(decoded.userId);
+        
+        if (!user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        
+        if (user.tier !== 'smart' && user.tier !== 'professional') {
+          throw new TRPCError({ 
+            code: 'FORBIDDEN', 
+            message: 'مشاركة الخطط متاحة فقط لباقة ذكي والاحترافي' 
+          });
+        }
+        
+        const trips = await db.getUserTrips(decoded.userId);
+        const trip = trips.find((t: any) => t.id === input.tripId);
+        if (!trip) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'الخطة غير موجودة' });
+        }
+        
+        const shareToken = crypto.randomBytes(32).toString('hex');
+        await db.updateTripShareToken(input.tripId, shareToken);
+        
+        return { shareToken };
+      }),
+
+    removeShareLink: protectedProcedure
+      .input(z.object({ tripId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const authHeader = ctx.req.headers.authorization;
+        if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        
+        const token = authHeader.substring(7);
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+        
+        const trips = await db.getUserTrips(decoded.userId);
+        const trip = trips.find((t: any) => t.id === input.tripId);
+        if (!trip) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'الخطة غير موجودة' });
+        }
+        
+        await db.removeTripShareToken(input.tripId);
+        return { success: true };
+      }),
+
+    getShared: publicProcedure
+      .input(z.object({ shareToken: z.string() }))
+      .query(async ({ input }) => {
+        const trip = await db.getTripByShareToken(input.shareToken);
+        if (!trip || !trip.isPublic) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'الخطة غير موجودة أو غير متاحة للمشاركة' });
+        }
+        
+        const destination = await db.getDestinationById(trip.destinationId);
+        return {
+          id: trip.id,
+          days: trip.days,
+          destination: destination?.nameAr || 'غير معروف',
+          plan: trip.plan,
+          createdAt: trip.createdAt,
+        };
       }),
   }),
 
@@ -834,6 +903,24 @@ export const appRouter = router({
           }
           
           await db.markSupportMessageResolved(input.id, input.isResolved);
+          return { success: true };
+        }),
+
+      delete: protectedProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(async ({ ctx, input }) => {
+          const authHeader = ctx.req.headers.authorization;
+          if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+          
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+          const user = await db.getUserById(decoded.userId);
+          
+          if (!user || user.role !== 'admin') {
+            throw new TRPCError({ code: 'FORBIDDEN' });
+          }
+          
+          await db.deleteSupportMessage(input.id);
           return { success: true };
         }),
     }),
