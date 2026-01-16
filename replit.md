@@ -57,6 +57,14 @@ A full-stack trip planning application for Saudi Arabia featuring destination gu
 - Tier-enforced activity limits per day
 
 ## Recent Changes
+- 2026-01-16: Trip Details and Support System
+  - TripDetails page (/trip/:id) with header, accommodation card, and daily itinerary breakdown
+  - Google Maps search links for all activities and accommodations
+  - Professional-only "best time to visit" labels with smart recommendations
+  - Support messages system: schema table, public submit endpoint, admin inbox with resolve/reopen
+  - AdminSupport page with unresolved/resolved count badges in admin navigation
+  - Minimum 3 activities/day enforced, fallback activities when DB is empty
+  - City card image fallback handler (falls back to Riyadh image on error)
 - 2026-01-16: Server-side PDF Export with tier enforcement
   - Backend endpoint GET /api/plans/:id/pdf with authentication + tier + ownership checks
   - Generates PDF server-side using jsPDF with embedded Amiri Arabic font
