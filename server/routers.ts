@@ -375,10 +375,13 @@ export const appRouter = router({
         
         // Enforce tier-based activity limit per day (minimum 3, maximum based on tier)
         const minActivitiesPerDay = 3;
-        const maxActivitiesPerDay = Math.max(minActivitiesPerDay, Math.min(limits.maxActivitiesPerDay, 4));
+        const maxActivitiesPerDay = Math.max(minActivitiesPerDay, limits.maxActivitiesPerDay);
         
         // Track used activities to avoid repetition
         const usedActivityIds = new Set<number>();
+        
+        // Create a combined pool with all remaining activities for fallback
+        const allShuffled = shuffleFn(filteredActivities);
         
         const pickActivity = (preferred: any[], fallback: any[]) => {
           let activity = preferred.find(a => !usedActivityIds.has(a.id));
@@ -386,7 +389,7 @@ export const appRouter = router({
             activity = fallback.find(a => !usedActivityIds.has(a.id));
           }
           if (!activity) {
-            activity = filteredActivities.find(a => !usedActivityIds.has(a.id));
+            activity = allShuffled.find(a => !usedActivityIds.has(a.id));
           }
           if (activity) usedActivityIds.add(activity.id);
           return activity;
@@ -395,11 +398,11 @@ export const appRouter = router({
         for (let day = 1; day <= input.days; day++) {
           const dayActivities = [];
           
+          // First pass: try to match activities to time slots based on bestTimeOfDay
           for (let i = 0; i < maxActivitiesPerDay; i++) {
-            const slot = timeSlots[i] || timeSlots[0];
+            const slot = timeSlots[i % timeSlots.length];
             let activity;
             
-            // Match activity to time slot based on bestTimeOfDay
             if (slot.slot === 'morning') {
               activity = pickActivity(shuffledMorning, shuffledAnytime);
             } else if (slot.slot === 'afternoon') {
@@ -410,6 +413,26 @@ export const appRouter = router({
             
             if (!activity) continue;
             
+            dayActivities.push({
+              time: slot.time,
+              period: slot.period,
+              activity: activity.name,
+              description: activity.details || `استمتع بـ${activity.name} في ${destination.nameAr}`,
+              type: activity.type,
+              category: activity.category,
+              duration: activity.duration || '2 ساعة',
+              cost: activity.cost,
+              budgetLevel: activity.budgetLevel,
+            });
+          }
+          
+          // Ensure minimum activities per day by filling from any remaining pool
+          while (dayActivities.length < minActivitiesPerDay) {
+            const activity = allShuffled.find(a => !usedActivityIds.has(a.id));
+            if (!activity) break;
+            usedActivityIds.add(activity.id);
+            const slotIdx = dayActivities.length % timeSlots.length;
+            const slot = timeSlots[slotIdx];
             dayActivities.push({
               time: slot.time,
               period: slot.period,
