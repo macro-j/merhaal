@@ -20,6 +20,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminCities from "./pages/admin/AdminCities";
 import AdminActivities from "./pages/admin/AdminActivities";
+import AdminAccommodations from "./pages/admin/AdminAccommodations";
 import AdminSupport from "./pages/admin/AdminSupport";
 
 function Router() {
@@ -40,6 +41,7 @@ function Router() {
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/admin/cities" component={AdminCities} />
       <Route path="/admin/activities" component={AdminActivities} />
+      <Route path="/admin/accommodations" component={AdminAccommodations} />
       <Route path="/admin/support" component={AdminSupport} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />

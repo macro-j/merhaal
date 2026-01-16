@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { trpc } from "@/lib/trpc";
-import { Building2, Users, MapPin, LayoutDashboard, LogOut, Home, MessageSquare } from "lucide-react";
+import { Building2, Users, MapPin, LayoutDashboard, LogOut, Home, MessageSquare, Hotel } from "lucide-react";
 import { useEffect } from "react";
 
 interface AdminLayoutProps {
@@ -41,6 +41,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { href: '/admin', label: 'لوحة التحكم', icon: LayoutDashboard },
     { href: '/admin/cities', label: 'المدن', icon: Building2 },
     { href: '/admin/activities', label: 'الأماكن', icon: MapPin },
+    { href: '/admin/accommodations', label: 'الإقامات', icon: Hotel },
     { href: '/admin/users', label: 'المستخدمين', icon: Users },
     { href: '/admin/support', label: 'رسائل الدعم', icon: MessageSquare },
   ];
