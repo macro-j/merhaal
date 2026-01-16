@@ -8,6 +8,13 @@
       "when": 1768526677532,
       "tag": "0000_boring_wolfpack",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1768585901357,
+      "tag": "0001_chunky_cyclops",
+      "breakpoints": true
     }
   ]
 }

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { trpc } from "@/lib/trpc";
-import { Building2, Users, MapPin, LayoutDashboard, LogOut, Home } from "lucide-react";
+import { Building2, Users, MapPin, LayoutDashboard, LogOut, Home, MessageSquare } from "lucide-react";
 import { useEffect } from "react";
 
 interface AdminLayoutProps {
@@ -42,6 +42,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { href: '/admin/cities', label: 'المدن', icon: Building2 },
     { href: '/admin/activities', label: 'الأماكن', icon: MapPin },
     { href: '/admin/users', label: 'المستخدمين', icon: Users },
+    { href: '/admin/support', label: 'رسائل الدعم', icon: MessageSquare },
   ];
 
   const isActive = (href: string) => {

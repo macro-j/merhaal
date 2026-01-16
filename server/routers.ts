@@ -340,8 +340,9 @@ export const appRouter = router({
           { time: '18:00', period: 'مساءً' },
         ];
         const dayTitles = ['اليوم الأول', 'اليوم الثاني', 'اليوم الثالث', 'اليوم الرابع', 'اليوم الخامس', 'اليوم السادس', 'اليوم السابع', 'اليوم الثامن', 'اليوم التاسع', 'اليوم العاشر'];
-        // Enforce tier-based activity limit per day
-        const maxActivitiesPerDay = Math.min(limits.maxActivitiesPerDay, Math.ceil(shuffled.length / input.days), 4);
+        // Enforce tier-based activity limit per day (minimum 3, maximum based on tier)
+        const minActivitiesPerDay = 3;
+        const maxActivitiesPerDay = Math.max(minActivitiesPerDay, Math.min(limits.maxActivitiesPerDay, 4));
 
         for (let day = 1; day <= input.days; day++) {
           const dayActivities = [];
@@ -693,6 +694,55 @@ export const appRouter = router({
           return { success: true };
         }),
     }),
+
+    support: router({
+      list: protectedProcedure.query(async ({ ctx }) => {
+        const authHeader = ctx.req.headers.authorization;
+        if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        
+        const token = authHeader.substring(7);
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+        const user = await db.getUserById(decoded.userId);
+        
+        if (!user || user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN' });
+        }
+        
+        return await db.getAllSupportMessages();
+      }),
+
+      markResolved: protectedProcedure
+        .input(z.object({ id: z.number(), isResolved: z.boolean() }))
+        .mutation(async ({ ctx, input }) => {
+          const authHeader = ctx.req.headers.authorization;
+          if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+          
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+          const user = await db.getUserById(decoded.userId);
+          
+          if (!user || user.role !== 'admin') {
+            throw new TRPCError({ code: 'FORBIDDEN' });
+          }
+          
+          await db.markSupportMessageResolved(input.id, input.isResolved);
+          return { success: true };
+        }),
+    }),
+  }),
+
+  support: router({
+    submit: publicProcedure
+      .input(z.object({
+        name: z.string().min(2),
+        email: z.string().email(),
+        subject: z.string().min(2),
+        message: z.string().min(10),
+      }))
+      .mutation(async ({ input }) => {
+        const result = await db.createSupportMessage(input);
+        return { id: result.id };
+      }),
   }),
 });
 

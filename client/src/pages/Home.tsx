@@ -328,6 +328,10 @@ export default function Home() {
                       src={dest.image} 
                       alt={language === 'ar' ? dest.name : dest.nameEn}
                       className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500 ease-out"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/images/cities/riyadh-hero.jpg';
+                      }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
                     

@@ -15,10 +15,12 @@ import Guides from "./pages/Guides";
 import Support from "./pages/Support";
 import Packages from "./pages/Packages";
 import MyPlans from "./pages/MyPlans";
+import TripDetails from "./pages/TripDetails";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminCities from "./pages/admin/AdminCities";
 import AdminActivities from "./pages/admin/AdminActivities";
+import AdminSupport from "./pages/admin/AdminSupport";
 
 function Router() {
   return (
@@ -29,6 +31,7 @@ function Router() {
       <Route path={"/dashboard"} component={Dashboard} />
       <Route path={"/plan-trip"} component={PlanTrip} />
       <Route path={"/my-plans"} component={MyPlans} />
+      <Route path={"/trip/:id"} component={TripDetails} />
       <Route path="/guides" component={Guides} />
       <Route path="/about" component={About} />
       <Route path="/support" component={Support} />
@@ -37,6 +40,7 @@ function Router() {
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/admin/cities" component={AdminCities} />
       <Route path="/admin/activities" component={AdminActivities} />
+      <Route path="/admin/support" component={AdminSupport} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

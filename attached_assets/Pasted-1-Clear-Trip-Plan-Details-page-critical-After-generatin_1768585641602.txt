@@ -1,0 +1,73 @@
+1) Clear Trip Plan Details page (critical)
+
+After generating a plan it shows success but details aren’t presented clearly.
+
+Create/adjust a “Trip Plan Details” view:
+
+Header: city, days, budget, accommodation type, interests
+
+For each day: day title + time blocks (morning/noon/afternoon/evening) + activity cards
+
+Each activity card: name, short description, duration, category/interest, and “Google Maps” link
+
+After generation, navigate automatically to this details view.
+
+2) Fix PDF export login error (must work)
+
+Professional users still get “please login” when exporting PDF.
+
+Ensure PDF download request always sends JWT Authorization: Bearer <token> (same token source as other authenticated calls).
+
+Server endpoint must enforce:
+
+tier === professional for PDF
+
+plan belongs to the user
+
+Free/Smart must receive 403 with clear Arabic message.
+
+3) Ensure generation uses DB + respects inputs (core)
+
+Prefer DB activities for the selected city.
+
+Enforce input-driven selection:
+
+interests strongly influence activities
+
+accommodation type (economy/medium/luxury) affects choices (use tags/priceRange heuristic)
+
+budget heuristic prevents expensive picks for low budgets
+
+If DB lacks enough matches, fill remaining slots withsfallback placeholders and show a clear message suggesting admin adds more activities.
+
+Never save an empty plan. Aim for ≥3 activities/day when data exists.
+
+Include one accommodation recommendation per trip when tier=professional and data exists.
+
+4) Fix AlUla image not showing
+
+Ensure city cards always have valid image URL/path.
+
+Add a default fallback image when missing.
+
+5) Google Maps links
+
+Add “عرض على خرائط Google” for each place.
+
+If googlePlaceId exists use it; otherwise create a Google Maps search URL (name + city).
+
+6) Professional-only “Best time to visit” (NO weather API)
+
+Add a Professional-only label per activity/time block:
+
+“أفضل وقت للزيارة” based on simple rules by category + time of day.
+
+Do not require any external API.
+
+7) Support messages → Admin inbox
+
+Save support form submissions into DB table support_messages.
+
+Add /admin/support to view and mark as resolved.
+
+Output: short summary + exact files changed + manual test checklist.

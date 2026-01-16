@@ -300,3 +300,32 @@ export async function deleteActivity(id: number) {
   const { activities } = await import('../drizzle/schema');
   await db.delete(activities).where(eq(activities.id, id));
 }
+
+export async function createSupportMessage(data: {
+  userId?: number;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { supportMessages } = await import('../drizzle/schema');
+  const result = await db.insert(supportMessages).values(data).returning({ id: supportMessages.id });
+  return result[0];
+}
+
+export async function getAllSupportMessages() {
+  const db = await getDb();
+  if (!db) return [];
+  const { supportMessages } = await import('../drizzle/schema');
+  const { desc } = await import('drizzle-orm');
+  return db.select().from(supportMessages).orderBy(desc(supportMessages.createdAt));
+}
+
+export async function markSupportMessageResolved(id: number, isResolved: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { supportMessages } = await import('../drizzle/schema');
+  await db.update(supportMessages).set({ isResolved }).where(eq(supportMessages.id, id));
+}

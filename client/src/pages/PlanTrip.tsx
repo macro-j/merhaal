@@ -23,9 +23,9 @@ export default function PlanTrip() {
   const [accommodationType, setAccommodationType] = useState('متوسط');
 
   const createTripMutation = trpc.trips.create.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success('تم إنشاء الرحلة بنجاح!');
-      setLocation('/dashboard');
+      setLocation(`/trip/${data.id}`);
     },
     onError: (error) => {
       toast.error('حدث خطأ: ' + error.message);
