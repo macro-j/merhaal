@@ -42,7 +42,7 @@ A full-stack trip planning application for Saudi Arabia featuring destination gu
 ## User Tier System
 - **Free**: 1 day max, 3 activities/day, 1 saved trip
 - **Smart**: 10 days max, 5 activities/day, 3 saved trips
-- **Professional**: Unlimited days, 10 activities/day, unlimited trips
+- **Professional**: Unlimited days, 10 activities/day, unlimited trips, PDF export
 
 ## Admin Dashboard
 - Located at `/admin` (admin role required)
@@ -57,6 +57,11 @@ A full-stack trip planning application for Saudi Arabia featuring destination gu
 - Tier-enforced activity limits per day
 
 ## Recent Changes
+- 2026-01-16: PDF Export and tier alignment
+  - Added PDF export feature for Professional tier users (jsPDF)
+  - PDF includes trip destination, duration, accommodation, daily itinerary
+  - Aligned Packages page tier IDs with database (free/smart/professional)
+  - PDF export button visible only to professional tier users in MyPlans
 - 2026-01-16: Fix discover city and user city display
   - Added automatic destination seeding on server startup (5 cities matching Home.tsx)
   - Fixed register mutation to return city in user object
