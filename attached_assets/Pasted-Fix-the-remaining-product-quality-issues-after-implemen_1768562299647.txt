@@ -1,0 +1,89 @@
+Fix the remaining product-quality issues after implementing PDF export. Apply minimal, targeted changes only.
+
+1) Arabic RTL PDF export (must work correctly)
+
+The PDF export currently uses English fallbacks.
+
+Replace this with proper Arabic RTL rendering.
+
+Embed an Arabic-capable font (e.g., Noto Naskh Arabic or Amiri) in the PDF generation.
+
+The PDF content must render Arabic text correctly and be readable:
+
+Destination / city name
+
+Trip duration and dates
+
+Day titles (اليوم الأول، اليوم الثاني…)
+
+Time blocks (صباحًا / ظهرًا / عصرًا / مساءً)
+
+Activity names and descriptions
+
+Accommodation recommendation section (if present)
+
+Keep Merhaal branding/footer.
+
+If the current PDF library has weak RTL support:
+
+Switch to the simplest reliable approach (e.g., HTML → PDF with embedded Arabic font),
+
+Without redesigning layout or changing content structure.
+
+2) Tier naming consistency (NO Premium naming)
+
+Use only one tier naming everywhere:
+
+Database / logic tier IDs: free, smart, professional
+
+UI / marketing label for professional: "احترافي"
+
+Do NOT use “Premium” or “بريميوم” anywhere in the UI, text, or pricing.
+
+Ensure the following are consistent across the app:
+
+Pricing page tier titles
+
+Feature lists
+
+Dashboard tier badge
+
+PDF export availability text
+
+Any conditional checks or copy
+
+3) PDF export availability (Professional only)
+
+The “تصدير الخطة بصيغة PDF” feature must:
+
+Be visible only to users with tier = professional
+
+Be hidden or disabled for free and smart
+
+Ensure backend checks enforce this (not UI-only).
+
+4) Verification checklist (required)
+
+Provide a short checklist confirming:
+
+A user with tier = professional (احترافي) can export a plan as PDF.
+
+The exported PDF displays Arabic text correctly (RTL, readable).
+
+Users with free or smart tiers cannot see or use PDF export.
+
+No occurrence of “Premium / بريميوم” exists anywhere in the app.
+
+Constraints
+
+No redesign
+
+No AI or generation logic rewrite
+
+Minimal, surgical code changes only
+
+Output
+
+List exact files changed
+
+Short confirmation summary only
