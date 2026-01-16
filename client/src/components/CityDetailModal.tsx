@@ -54,14 +54,6 @@ export function CityDetailModal({ cityId, isOpen, onClose, language }: CityDetai
                 alt={language === 'ar' ? destination.nameAr : destination.nameEn}
                 className="w-full h-full object-cover"
               />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white rounded-full"
-                onClick={onClose}
-              >
-                <X className="w-5 h-5" />
-              </Button>
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
                 <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">
                   {language === 'ar' ? destination.nameAr : destination.nameEn}

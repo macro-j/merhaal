@@ -1,0 +1,243 @@
+Objective: Finalize and stabilize the product so that trip generation, UX, authentication, and tier differences (including Premium-only PDF export) work end-to-end as real functionality, not UI-only. Apply minimal, targeted changes only.
+
+1) Fix Discover city modal issues
+
+The city “Discover” modal currently has a duplicated/glitched close (X) button.
+
+Keep one single close button only (prefer the modal/dialog native close).
+
+Remove any extra absolute-positioned close icon layered on the image.
+
+Ensure correct RTL alignment and no duplication on hover or resize.
+
+2) Fix trip generation auth error (Please login – 10001)
+
+Logged-in users receive auth error 10001 when clicking “توليد الخطة”.
+
+Fix session propagation:
+
+Ensure cookies/session credentials are included in the request.
+
+Ensure backend auth middleware correctly recognizes the session.
+
+Verify same-site cookie and CORS configuration works on Replit domains.
+
+After fix: authenticated users must generate plans without login errors.
+
+3) Discover works before login (public city view)
+
+Clicking “اكتشف” while unauthenticated opens a public city detail view.
+
+The view must show:
+
+City name
+
+Large Arabic description (from cities table)
+
+Optional hero image
+
+CTA: “أنشئ خطة رحلتك”
+
+CTA behavior:
+
+Not logged in → redirect to /login (with redirect back).
+
+Logged in → go to plan creation with city preselected.
+
+Ensure consistent city identifier usage across UI and API.
+
+4) User city field
+
+Registration form must visibly include optional “المدينة”.
+
+Persist it in users.city.
+
+Ensure auth/session response returns city.
+
+Display user city after login (dashboard header or account section).
+
+5) Verify trip generation is real and database-driven
+
+Do NOT rewrite the generation algorithm.
+
+Ensure generated trips:
+
+Use activities from selected city only.
+
+Respect selected days and tier limits.
+
+Include daily itinerary with time blocks.
+
+Persist the validated plan to DB.
+
+Render the same structure in “My Plans”.
+
+If activities are insufficient, show a clear message (no silent failure).
+
+6) Accommodation recommendation (lightweight)
+
+Without building a full accommodations system:
+
+Use activities tagged as “إقامة”, OR
+
+Add a simple recommended accommodation block per trip based on budget/type.
+
+Premium plans must include accommodation recommendations when data exists.
+
+7) Tier differences must be REAL (backend enforced)
+
+Enforce tier logic on the backend as the source of truth.
+
+Free
+
+Max 1 day
+
+Max 1 saved trip
+
+~3 activities per day
+
+Basic descriptions
+
+❌ No PDF export
+
+Smart
+
+Max 10 days
+
+Max 3 saved trips
+
+~5 activities per day
+
+Richer descriptions
+
+❌ No PDF export
+
+Professional / Premium
+
+Unlimited days
+
+Unlimited saved trips
+
+8–10 activities per day (when available)
+
+Accommodation recommendations
+
+Longest descriptions and full time blocks
+
+✅ PDF export enabled
+
+8) Premium feature behavior (must be observable)
+
+Premium features must affect actual output:
+
+Advanced smart personalization
+
+Prioritize activities by interests AND time of day.
+
+Unique / non-touristy suggestions
+
+Prefer less common activities for Premium tier.
+
+Unlimited saving
+
+No limits on saved plans.
+
+Early access
+
+Gate future features/cities behind tier === professional.
+
+PDF export
+
+Add “تصدير PDF” button in My Plans and plan detail view.
+
+Button visible only for Professional tier.
+
+PDF must include:
+
+Trip title + city
+
+Daily itinerary with time blocks
+
+Activities + descriptions
+
+Accommodation recommendation
+
+Arabic RTL layout
+
+Use server-side generation (or reliable client-side library).
+
+9) Pricing page accuracy
+
+Update pricing cards to explicitly list:
+
+“تصدير الخطة بصيغة PDF” as a Professional-only feature.
+
+Ensure pricing claims match enforced behavior.
+
+10) Upgrade flow
+
+If user is NOT authenticated:
+
+Clicking upgrade redirects to /login (with redirect back).
+
+If authenticated:
+
+Show upgrade request confirmation (no payments).
+
+Admin tier changes in /admin/users must immediately affect:
+
+Limits
+
+Generation richness
+
+PDF export availability.
+
+11) Logged-in navigation
+
+Hide public pages when authenticated.
+
+Show only:
+
+Plan Trip
+
+My Plans
+
+Support
+
+Show Admin link only for admin role.
+
+12) Arabic text quality
+
+Fix Arabic tanween globally (use "ًا" not "اً").
+
+Ensure correct forms (سهلاً، حسابًا، شكرًا).
+
+13) Responsive & RTL layout
+
+Stable full-height sidebar on desktop.
+
+Mobile drawer behavior.
+
+Correct RTL alignment everywhere.
+
+Output requirements (proof-based)
+
+List exact files changed.
+
+Provide a short manual test checklist:
+
+Discover modal (single close button)
+
+Generate plan while logged in (no 10001)
+
+Free vs Smart vs Premium differences
+
+PDF export visible only for Premium and works correctly
+
+Constraints:
+
+No redesign
+
+No AI model rewrite
+
+Minimal, surgical code changes only
