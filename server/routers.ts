@@ -359,6 +359,19 @@ export const appRouter = router({
         const result = await db.createTrip(tripData);
         return { id: result.id, plan: tripData.plan };
       }),
+
+    delete: protectedProcedure
+      .input(z.object({ tripId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const authHeader = ctx.req.headers.authorization;
+        if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        
+        const token = authHeader.substring(7);
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+        
+        await db.deleteTrip(input.tripId, decoded.userId);
+        return { success: true };
+      }),
   }),
 
   user: router({

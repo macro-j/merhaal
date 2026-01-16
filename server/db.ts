@@ -1,14 +1,18 @@
 import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
+import { drizzle } from "drizzle-orm/node-postgres";
+import pg from "pg";
 import { InsertUser, users } from "../drizzle/schema";
 
-let _db: ReturnType<typeof drizzle> | null = null;
+const { Pool } = pg;
 
-// Lazily create the drizzle instance so local tooling can run without a DB.
+let _db: ReturnType<typeof drizzle> | null = null;
+let _pool: pg.Pool | null = null;
+
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      _pool = new Pool({ connectionString: process.env.DATABASE_URL });
+      _db = drizzle(_pool);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -21,7 +25,7 @@ export async function createUser(user: InsertUser) {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
   
-  const result = await db.insert(users).values(user).$returningId();
+  const result = await db.insert(users).values(user).returning({ id: users.id });
   return result[0];
 }
 
@@ -67,7 +71,6 @@ export async function seedAdminIfNeeded() {
   }
 }
 
-// Destinations
 export async function getAllDestinations() {
   const db = await getDb();
   if (!db) return [];
@@ -94,7 +97,6 @@ export async function getDestinationByName(name: string) {
   return result.length > 0 ? result[0] : null;
 }
 
-// Activities
 export async function getActivitiesByDestination(destinationId: number) {
   const db = await getDb();
   if (!db) return [];
@@ -102,7 +104,6 @@ export async function getActivitiesByDestination(destinationId: number) {
   return db.select().from(activities).where(eq(activities.destinationId, destinationId));
 }
 
-// Accommodations
 export async function getAccommodationsByDestination(destinationId: number) {
   const db = await getDb();
   if (!db) return [];
@@ -110,7 +111,6 @@ export async function getAccommodationsByDestination(destinationId: number) {
   return db.select().from(accommodations).where(eq(accommodations.destinationId, destinationId));
 }
 
-// Restaurants
 export async function getRestaurantsByDestination(destinationId: number) {
   const db = await getDb();
   if (!db) return [];
@@ -118,7 +118,6 @@ export async function getRestaurantsByDestination(destinationId: number) {
   return db.select().from(restaurants).where(eq(restaurants.destinationId, destinationId));
 }
 
-// Trips
 export async function getUserTrips(userId: number) {
   const db = await getDb();
   if (!db) return [];
@@ -126,23 +125,32 @@ export async function getUserTrips(userId: number) {
   return db.select().from(trips).where(eq(trips.userId, userId));
 }
 
-export async function createTrip(trip: any) {
+export async function createTrip(data: {
+  userId: number;
+  destinationId: number;
+  days: number;
+  budget: string;
+  interests: string[];
+  accommodationType?: string;
+  plan: any;
+}) {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
   const { trips } = await import('../drizzle/schema');
-  const result = await db.insert(trips).values(trip).$returningId();
+  
+  const result = await db.insert(trips).values(data).returning({ id: trips.id });
   return result[0];
 }
 
-export async function updateUserTier(userId: number, tier: 'free' | 'smart' | 'professional') {
+export async function deleteTrip(tripId: number, userId: number) {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
-  await db.update(users).set({ tier }).where(eq(users.id, userId));
+  const { trips } = await import('../drizzle/schema');
+  const { and } = await import('drizzle-orm');
+  
+  await db.delete(trips).where(and(eq(trips.id, tripId), eq(trips.userId, userId)));
 }
 
-// ============ ADMIN FUNCTIONS ============
-
-// Users Admin
 export async function getAllUsers() {
   const db = await getDb();
   if (!db) return [];
@@ -156,18 +164,23 @@ export async function getAllUsers() {
   }).from(users);
 }
 
+export async function updateUserTier(userId: number, tier: 'free' | 'smart' | 'professional') {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.update(users).set({ tier }).where(eq(users.id, userId));
+}
+
 export async function updateUserRole(userId: number, role: 'user' | 'admin') {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
   await db.update(users).set({ role }).where(eq(users.id, userId));
 }
 
-// Destinations Admin
 export async function createDestination(data: any) {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
   const { destinations } = await import('../drizzle/schema');
-  const result = await db.insert(destinations).values(data).$returningId();
+  const result = await db.insert(destinations).values(data).returning({ id: destinations.id });
   return result[0];
 }
 
@@ -185,19 +198,18 @@ export async function deleteDestination(id: number) {
   await db.delete(destinations).where(eq(destinations.id, id));
 }
 
-export async function getActiveDestinations() {
+export async function getAllActivities() {
   const db = await getDb();
   if (!db) return [];
-  const { destinations } = await import('../drizzle/schema');
-  return db.select().from(destinations).where(eq(destinations.isActive, true));
+  const { activities } = await import('../drizzle/schema');
+  return db.select().from(activities);
 }
 
-// Activities Admin
 export async function createActivity(data: any) {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
   const { activities } = await import('../drizzle/schema');
-  const result = await db.insert(activities).values(data).$returningId();
+  const result = await db.insert(activities).values(data).returning({ id: activities.id });
   return result[0];
 }
 
@@ -213,48 +225,4 @@ export async function deleteActivity(id: number) {
   if (!db) throw new Error('Database not available');
   const { activities } = await import('../drizzle/schema');
   await db.delete(activities).where(eq(activities.id, id));
-}
-
-export async function getAllActivities() {
-  const db = await getDb();
-  if (!db) return [];
-  const { activities } = await import('../drizzle/schema');
-  return db.select().from(activities);
-}
-
-export async function getActiveActivitiesByDestination(destinationId: number) {
-  const db = await getDb();
-  if (!db) return [];
-  const { activities } = await import('../drizzle/schema');
-  const { and } = await import('drizzle-orm');
-  return db.select().from(activities).where(
-    and(eq(activities.destinationId, destinationId), eq(activities.isActive, true))
-  );
-}
-
-// Count user trips for tier limits
-export async function countUserTrips(userId: number) {
-  const db = await getDb();
-  if (!db) return 0;
-  const { trips } = await import('../drizzle/schema');
-  const { count } = await import('drizzle-orm');
-  const result = await db.select({ count: count() }).from(trips).where(eq(trips.userId, userId));
-  return result[0]?.count || 0;
-}
-
-// Get trip by ID
-export async function getTripById(tripId: number) {
-  const db = await getDb();
-  if (!db) return null;
-  const { trips } = await import('../drizzle/schema');
-  const result = await db.select().from(trips).where(eq(trips.id, tripId)).limit(1);
-  return result.length > 0 ? result[0] : null;
-}
-
-// Delete trip
-export async function deleteTrip(tripId: number) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
-  const { trips } = await import('../drizzle/schema');
-  await db.delete(trips).where(eq(trips.id, tripId));
 }
