@@ -133,7 +133,7 @@ export async function seedDestinationsIfEmpty() {
         titleEn: 'An Open-Air Museum',
         descriptionAr: 'واحة تاريخية بين الصخور الضخمة وآثار الحضارات القديمة',
         descriptionEn: 'A historical oasis among massive rocks and ancient civilization ruins',
-        images: ['/images/cities/alula-hero.jpg'],
+        images: ['/images/cities/alula-hero.png'],
         isActive: true,
       },
     ];

@@ -53,6 +53,10 @@ export function CityDetailModal({ cityId, isOpen, onClose, language }: CityDetai
                 src={destination.images?.[0] || '/images/cities/riyadh-hero.jpg'}
                 alt={language === 'ar' ? destination.nameAr : destination.nameEn}
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = '/images/cities/riyadh-hero.jpg';
+                }}
               />
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
                 <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">
