@@ -83,6 +83,7 @@ export default function Packages() {
         { text: "تخصيص ذكي متقدم حسب الوقت والاهتمامات", textEn: "Advanced smart customization by time and interests" },
         { text: "اقتراحات أماكن فريدة وغير تقليدية", textEn: "Unique and unconventional place suggestions" },
         { text: "حفظ غير محدود للخطط", textEn: "Unlimited plan saves" },
+        { text: "تصدير خطط الرحلات بصيغة PDF", textEn: "Export trip plans as PDF" },
         { text: "أولوية الوصول للمميزات الجديدة والمدن القادمة", textEn: "Priority access to new features and upcoming cities" },
       ],
     },
