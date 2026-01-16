@@ -124,6 +124,15 @@ Activities support enhanced metadata for smarter trip planning:
 - Trip owners can cancel sharing anytime
 
 ## Recent Changes
+- 2026-01-16: Admin Bulk Import System
+  - AdminImport page (/admin/import) with CSV and XLSX file support
+  - Three-dataset upload: cities, activities, accommodations
+  - Client-side validation with required headers check and preview display
+  - Row-level validation for enums (tier, budgetLevel, bestTimeOfDay, class)
+  - Server-side upsert logic: checks for existing records before insert/update
+  - Statistics returned: inserted/updated counts per dataset
+  - Sheet selection for multi-sheet Excel files
+  - Upload icon added to admin navigation sidebar
 - 2026-01-16: Admin Accommodations Management
   - AdminAccommodations page with city filtering and CRUD (create, edit, delete)
   - Accommodation class enum: economy (اقتصادي), mid (متوسط), luxury (فاخر)
