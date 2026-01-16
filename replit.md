@@ -133,6 +133,14 @@ For bulk imports, use XLSX files with these exact sheet names: **Cities**, **Act
 - Trip owners can cancel sharing anytime
 
 ## Recent Changes
+- 2026-01-16: Idempotent Bulk Import with True UPSERT
+  - Added PostgreSQL ON CONFLICT DO UPDATE for destinations, activities, accommodations
+  - New functions: upsertDestinationByExternalId, upsertActivityByExternalId, upsertAccommodationByExternalId
+  - Import now uses raw SQL UPSERT for atomic insert-or-update operations
+  - Set slug = external_id by default to avoid unique constraint conflicts
+  - Images stored as JSON array (properly serialized)
+  - Re-importing same file multiple times now works without errors
+  - Import results show "upserted" count instead of separate inserted/updated
 - 2026-01-16: Unified Excel Import Option
   - Added "استيراد ملف شامل" tab for single-file upload containing all datasets
   - Automatic sheet detection: Cities, Activities, Accommodations (exact names required)

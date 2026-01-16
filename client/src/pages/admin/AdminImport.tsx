@@ -835,19 +835,19 @@ export default function AdminImport() {
                   {importResults.cities && (
                     <div>
                       <span className="text-muted-foreground">المدن: </span>
-                      <span className="text-green-700">{importResults.cities.inserted} جديد, {importResults.cities.updated} محدث</span>
+                      <span className="text-green-700">{importResults.cities.upserted} سجل</span>
                     </div>
                   )}
                   {importResults.activities && (
                     <div>
                       <span className="text-muted-foreground">الأنشطة: </span>
-                      <span className="text-green-700">{importResults.activities.inserted} جديد, {importResults.activities.updated} محدث</span>
+                      <span className="text-green-700">{importResults.activities.upserted} سجل</span>
                     </div>
                   )}
                   {importResults.accommodations && (
                     <div>
                       <span className="text-muted-foreground">الإقامات: </span>
-                      <span className="text-green-700">{importResults.accommodations.inserted} جديد, {importResults.accommodations.updated} محدث</span>
+                      <span className="text-green-700">{importResults.accommodations.upserted} سجل</span>
                     </div>
                   )}
                 </div>

@@ -21,6 +21,19 @@ export async function getDb() {
   return _db;
 }
 
+export async function getPool(): Promise<pg.Pool | null> {
+  if (!_pool && process.env.DATABASE_URL) {
+    try {
+      _pool = new Pool({ connectionString: process.env.DATABASE_URL });
+      _db = drizzle(_pool);
+    } catch (error) {
+      console.warn("[Database] Failed to connect:", error);
+      return null;
+    }
+  }
+  return _pool;
+}
+
 export async function createUser(user: InsertUser) {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
@@ -381,12 +394,63 @@ export async function getAccommodationByExternalId(externalId: string) {
   return result[0] || null;
 }
 
+export async function upsertDestinationByExternalId(externalId: string, data: {
+  slug: string;
+  nameAr: string;
+  nameEn: string;
+  titleAr: string;
+  titleEn: string;
+  descriptionAr: string;
+  descriptionEn: string;
+  images: string[];
+  isActive: boolean;
+}): Promise<{ id: number }> {
+  const pool = await getPool();
+  if (!pool) throw new Error('Database not available');
+  
+  const result = await pool.query(`
+    INSERT INTO destinations (external_id, slug, name_ar, name_en, title_ar, title_en, description_ar, description_en, images, is_active, created_at, updated_at)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+    ON CONFLICT (external_id) DO UPDATE SET
+      slug = EXCLUDED.slug,
+      name_ar = EXCLUDED.name_ar,
+      name_en = EXCLUDED.name_en,
+      title_ar = EXCLUDED.title_ar,
+      title_en = EXCLUDED.title_en,
+      description_ar = EXCLUDED.description_ar,
+      description_en = EXCLUDED.description_en,
+      images = EXCLUDED.images,
+      is_active = EXCLUDED.is_active,
+      updated_at = NOW()
+    RETURNING id
+  `, [
+    externalId,
+    data.slug,
+    data.nameAr,
+    data.nameEn,
+    data.titleAr,
+    data.titleEn,
+    data.descriptionAr,
+    data.descriptionEn,
+    JSON.stringify(data.images),
+    data.isActive
+  ]);
+  
+  return { id: result.rows[0].id };
+}
+
 export async function createDestinationWithExternalId(externalId: string, data: any) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
-  const { destinations } = await import('../drizzle/schema');
-  const result = await db.insert(destinations).values({ externalId, ...data }).returning({ id: destinations.id });
-  return result[0];
+  return upsertDestinationByExternalId(externalId, {
+    slug: data.slug || externalId.toLowerCase().replace(/\s+/g, '-'),
+    nameAr: data.nameAr,
+    nameEn: data.nameEn,
+    titleAr: data.titleAr,
+    titleEn: data.titleEn,
+    descriptionAr: data.descriptionAr || '',
+    descriptionEn: data.descriptionEn || '',
+    images: data.images || [],
+    isActive: data.isActive !== false,
+  });
 }
 
 export async function updateDestinationByExternalId(externalId: string, data: any) {
@@ -396,12 +460,67 @@ export async function updateDestinationByExternalId(externalId: string, data: an
   await db.update(destinations).set({ ...data, updatedAt: new Date() }).where(eq(destinations.externalId, externalId));
 }
 
+export async function upsertActivityByExternalId(externalId: string, data: {
+  destinationId: number;
+  name: string;
+  nameEn?: string;
+  type: string;
+  category?: string;
+  tags?: string[];
+  budgetLevel?: string;
+  bestTimeOfDay?: string;
+  duration?: string;
+  details?: string;
+  detailsEn?: string;
+  googleMapsUrl?: string;
+  minTier?: string;
+  isActive?: boolean;
+}): Promise<{ id: number }> {
+  const pool = await getPool();
+  if (!pool) throw new Error('Database not available');
+  
+  const result = await pool.query(`
+    INSERT INTO activities (external_id, destination_id, name, name_en, type, category, tags, budget_level, best_time_of_day, duration, details, details_en, google_maps_url, min_tier, is_active, created_at)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW())
+    ON CONFLICT (external_id) DO UPDATE SET
+      destination_id = EXCLUDED.destination_id,
+      name = EXCLUDED.name,
+      name_en = EXCLUDED.name_en,
+      type = EXCLUDED.type,
+      category = EXCLUDED.category,
+      tags = EXCLUDED.tags,
+      budget_level = EXCLUDED.budget_level,
+      best_time_of_day = EXCLUDED.best_time_of_day,
+      duration = EXCLUDED.duration,
+      details = EXCLUDED.details,
+      details_en = EXCLUDED.details_en,
+      google_maps_url = EXCLUDED.google_maps_url,
+      min_tier = EXCLUDED.min_tier,
+      is_active = EXCLUDED.is_active
+    RETURNING id
+  `, [
+    externalId,
+    data.destinationId,
+    data.name,
+    data.nameEn || null,
+    data.type,
+    data.category || null,
+    data.tags ? JSON.stringify(data.tags) : null,
+    data.budgetLevel || null,
+    data.bestTimeOfDay || null,
+    data.duration || null,
+    data.details || null,
+    data.detailsEn || null,
+    data.googleMapsUrl || null,
+    data.minTier || 'free',
+    data.isActive !== false
+  ]);
+  
+  return { id: result.rows[0].id };
+}
+
 export async function createActivityWithExternalId(externalId: string, data: any) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
-  const { activities } = await import('../drizzle/schema');
-  const result = await db.insert(activities).values({ externalId, ...data }).returning({ id: activities.id });
-  return result[0];
+  return upsertActivityByExternalId(externalId, data);
 }
 
 export async function updateActivityByExternalId(externalId: string, data: any) {
@@ -411,12 +530,53 @@ export async function updateActivityByExternalId(externalId: string, data: any) 
   await db.update(activities).set(data).where(eq(activities.externalId, externalId));
 }
 
+export async function upsertAccommodationByExternalId(externalId: string, data: {
+  destinationId: number;
+  nameAr: string;
+  nameEn?: string;
+  descriptionAr?: string;
+  descriptionEn?: string;
+  class: string;
+  priceRange?: string;
+  googleMapsUrl?: string;
+  isActive?: boolean;
+}): Promise<{ id: number }> {
+  const pool = await getPool();
+  if (!pool) throw new Error('Database not available');
+  
+  const result = await pool.query(`
+    INSERT INTO accommodations (external_id, destination_id, name_ar, name_en, description_ar, description_en, class, price_range, google_maps_url, is_active, created_at, updated_at)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+    ON CONFLICT (external_id) DO UPDATE SET
+      destination_id = EXCLUDED.destination_id,
+      name_ar = EXCLUDED.name_ar,
+      name_en = EXCLUDED.name_en,
+      description_ar = EXCLUDED.description_ar,
+      description_en = EXCLUDED.description_en,
+      class = EXCLUDED.class,
+      price_range = EXCLUDED.price_range,
+      google_maps_url = EXCLUDED.google_maps_url,
+      is_active = EXCLUDED.is_active,
+      updated_at = NOW()
+    RETURNING id
+  `, [
+    externalId,
+    data.destinationId,
+    data.nameAr,
+    data.nameEn || null,
+    data.descriptionAr || null,
+    data.descriptionEn || null,
+    data.class || 'mid',
+    data.priceRange || null,
+    data.googleMapsUrl || null,
+    data.isActive !== false
+  ]);
+  
+  return { id: result.rows[0].id };
+}
+
 export async function createAccommodationWithExternalId(externalId: string, data: any) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
-  const { accommodations } = await import('../drizzle/schema');
-  const result = await db.insert(accommodations).values({ externalId, ...data }).returning({ id: accommodations.id });
-  return result[0];
+  return upsertAccommodationByExternalId(externalId, data);
 }
 
 export async function updateAccommodationByExternalId(externalId: string, data: any) {
