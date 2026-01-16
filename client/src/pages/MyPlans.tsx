@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { trpc } from "@/lib/trpc";
-import { Calendar, MapPin, Plus, ChevronDown, Trash2, Clock, FileDown } from "lucide-react";
+import { Calendar, MapPin, Plus, ChevronDown, Trash2, Clock, FileDown, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
@@ -19,6 +19,8 @@ export default function MyPlans() {
     enabled: !!user,
   });
   const [openTrips, setOpenTrips] = useState<number[]>([]);
+  const [exportingPdf, setExportingPdf] = useState<number | null>(null);
+  const amiriFontRef = useRef<string | null>(null);
 
   const deleteMutation = trpc.trips.delete.useMutation({
     onSuccess: () => {
@@ -99,85 +101,129 @@ export default function MyPlans() {
     }
   };
 
-  const handleExportPDF = (trip: any) => {
-    const plan = trip.plan as any;
-    const cityName = plan?.destination || `Trip #${trip.id}`;
+  const loadAmiriFont = async (): Promise<string> => {
+    if (amiriFontRef.current) return amiriFontRef.current;
     
-    const doc = new jsPDF();
-    let y = 20;
+    const response = await fetch('/fonts/Amiri-Regular.ttf');
+    const blob = await response.blob();
     
-    doc.setFontSize(18);
-    doc.text('Merhaal Trip Plan', 105, y, { align: 'center' });
-    y += 10;
-    doc.setFontSize(14);
-    doc.text(`Destination: ${cityName}`, 105, y, { align: 'center' });
-    y += 15;
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = (reader.result as string).split(',')[1];
+        amiriFontRef.current = base64;
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  const handleExportPDF = async (trip: any) => {
+    setExportingPdf(trip.id);
     
-    doc.setFontSize(11);
-    doc.text(`Duration: ${trip.days} day${trip.days > 1 ? 's' : ''}`, 20, y);
-    y += 7;
-    doc.text(`Created: ${new Date(trip.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, 20, y);
-    y += 12;
-    
-    if (plan?.accommodation) {
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Accommodation', 20, y);
-      doc.setFont('helvetica', 'normal');
-      y += 7;
-      doc.setFontSize(10);
-      doc.text(`${plan.accommodation.name}`, 25, y);
-      y += 5;
-      doc.text(`Type: ${plan.accommodation.type} | ${plan.accommodation.pricePerNight} SAR/night`, 25, y);
+    try {
+      const fontData = await loadAmiriFont();
+      const plan = trip.plan as any;
+      const cityName = plan?.destination || `رحلة #${trip.id}`;
+      
+      const doc = new jsPDF();
+      const pageWidth = 210;
+      const rightMargin = pageWidth - 20;
+      let y = 25;
+      
+      doc.addFileToVFS('Amiri-Regular.ttf', fontData);
+      doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+      doc.setFont('Amiri');
+      
+      doc.setFontSize(22);
+      doc.text('خطة رحلة مرحال', rightMargin, y, { align: 'right' });
       y += 12;
-    }
-    
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Daily Itinerary', 20, y);
-    doc.setFont('helvetica', 'normal');
-    y += 10;
-    
-    plan?.dailyPlan?.forEach((day: any, dayIdx: number) => {
-      if (y > 250) {
-        doc.addPage();
-        y = 20;
-      }
+      
+      doc.setFontSize(16);
+      doc.text(cityName, rightMargin, y, { align: 'right' });
+      y += 15;
       
       doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Day ${dayIdx + 1}`, 20, y);
-      doc.setFont('helvetica', 'normal');
-      y += 7;
+      const daysText = trip.days === 1 ? 'يوم واحد' : `${trip.days} أيام`;
+      doc.text(`المدة: ${daysText}`, rightMargin, y, { align: 'right' });
+      y += 8;
       
-      doc.setFontSize(9);
-      day.activities?.forEach((activity: any) => {
-        if (y > 270) {
-          doc.addPage();
-          y = 20;
-        }
-        const timeStr = activity.time || '';
-        const activityName = activity.activity || activity.name || 'Activity';
-        doc.text(`${timeStr} - ${activityName}`, 25, y);
-        y += 5;
-        if (activity.description) {
-          const desc = activity.description.length > 90 ? activity.description.substring(0, 87) + '...' : activity.description;
-          doc.setTextColor(100);
-          doc.text(desc, 30, y);
-          doc.setTextColor(0);
-          y += 5;
-        }
-        y += 2;
+      const dateStr = new Date(trip.createdAt).toLocaleDateString('ar-SA', { 
+        year: 'numeric', month: 'long', day: 'numeric' 
       });
-      y += 5;
-    });
-    
-    doc.setFontSize(8);
-    doc.setTextColor(150);
-    doc.text('Generated by Merhaal - Your Saudi Travel Companion', 105, 285, { align: 'center' });
-    
-    doc.save(`merhaal-trip-${trip.id}.pdf`);
-    toast.success(language === 'ar' ? 'تم تصدير الخطة بنجاح' : 'Trip plan exported successfully');
+      doc.text(`تاريخ الإنشاء: ${dateStr}`, rightMargin, y, { align: 'right' });
+      y += 15;
+      
+      if (plan?.accommodation) {
+        doc.setFontSize(13);
+        doc.text('الإقامة', rightMargin, y, { align: 'right' });
+        y += 8;
+        doc.setFontSize(10);
+        doc.text(plan.accommodation.name || '', rightMargin - 10, y, { align: 'right' });
+        y += 6;
+        doc.text(`${plan.accommodation.type || ''} | ${plan.accommodation.pricePerNight || ''} ريال/ليلة`, rightMargin - 10, y, { align: 'right' });
+        y += 15;
+      }
+      
+      doc.setFontSize(14);
+      doc.text('برنامج الرحلة اليومي', rightMargin, y, { align: 'right' });
+      y += 12;
+      
+      const dayTitles = ['اليوم الأول', 'اليوم الثاني', 'اليوم الثالث', 'اليوم الرابع', 'اليوم الخامس', 
+                         'اليوم السادس', 'اليوم السابع', 'اليوم الثامن', 'اليوم التاسع', 'اليوم العاشر'];
+      
+      plan?.dailyPlan?.forEach((day: any, dayIdx: number) => {
+        if (y > 250) {
+          doc.addPage();
+          doc.setFont('Amiri');
+          y = 25;
+        }
+        
+        doc.setFontSize(12);
+        const dayTitle = day.title || dayTitles[dayIdx] || `اليوم ${dayIdx + 1}`;
+        doc.text(dayTitle, rightMargin, y, { align: 'right' });
+        y += 9;
+        
+        doc.setFontSize(9);
+        day.activities?.forEach((activity: any) => {
+          if (y > 270) {
+            doc.addPage();
+            doc.setFont('Amiri');
+            y = 25;
+          }
+          
+          const timeStr = activity.time || '';
+          const period = activity.period || '';
+          const activityName = activity.activity || activity.name || '';
+          
+          doc.text(`${period} ${timeStr} - ${activityName}`, rightMargin - 5, y, { align: 'right' });
+          y += 6;
+          
+          if (activity.description) {
+            const desc = activity.description.length > 70 ? activity.description.substring(0, 67) + '...' : activity.description;
+            doc.setTextColor(100);
+            doc.text(desc, rightMargin - 10, y, { align: 'right' });
+            doc.setTextColor(0);
+            y += 6;
+          }
+          y += 2;
+        });
+        y += 6;
+      });
+      
+      doc.setFontSize(8);
+      doc.setTextColor(120);
+      doc.text('مرحال - رفيقك في السفر داخل السعودية', pageWidth / 2, 285, { align: 'center' });
+      
+      doc.save(`merhaal-trip-${trip.id}.pdf`);
+      toast.success('تم تصدير الخطة بنجاح');
+    } catch (error) {
+      console.error('PDF export error:', error);
+      toast.error(language === 'ar' ? 'حدث خطأ أثناء التصدير' : 'Error exporting PDF');
+    } finally {
+      setExportingPdf(null);
+    }
   };
 
   const isProfessional = user?.tier === 'professional';
@@ -258,13 +304,18 @@ export default function MyPlans() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                              disabled={exportingPdf === trip.id}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleExportPDF(trip);
                               }}
                               title={language === 'ar' ? 'تصدير PDF' : 'Export PDF'}
                             >
-                              <FileDown className="w-4 h-4" />
+                              {exportingPdf === trip.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <FileDown className="w-4 h-4" />
+                              )}
                             </Button>
                           )}
                           <Button
