@@ -341,6 +341,26 @@ export async function deleteAccommodation(id: number) {
   await db.delete(accommodations).where(eq(accommodations.id, id));
 }
 
+export async function getActivityByNameAndDestination(name: string, destinationId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const { activities } = await import('../drizzle/schema');
+  const { and } = await import('drizzle-orm');
+  const result = await db.select().from(activities)
+    .where(and(eq(activities.name, name), eq(activities.destinationId, destinationId)));
+  return result[0] || null;
+}
+
+export async function getAccommodationByNameAndDestination(nameAr: string, destinationId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const { accommodations } = await import('../drizzle/schema');
+  const { and } = await import('drizzle-orm');
+  const result = await db.select().from(accommodations)
+    .where(and(eq(accommodations.nameAr, nameAr), eq(accommodations.destinationId, destinationId)));
+  return result[0] || null;
+}
+
 export async function createSupportMessage(data: {
   userId?: number;
   name: string;

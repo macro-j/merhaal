@@ -1,0 +1,72 @@
+Implement an admin-only Import page with built-in validation + preview, supporting BOTH CSV and Excel (.xlsx).
+
+Goal:
+- From the admin panel, I upload data files (CSV or XLSX).
+- The system automatically validates/reviews them, shows preview + errors, then imports only after I confirm.
+
+Requirements:
+1) Add /admin/import page (admin-only) accessible from admin sidebar as "استيراد البيانات".
+2) The page must support uploading either:
+   - CSV (UTF-8) OR
+   - Excel .xlsx
+   for each dataset.
+3) Supported datasets (3 logical tables):
+   - Cities
+   - Activities
+   - Accommodations
+4) Upload UX:
+   - Provide 3 upload slots (Cities / Activities / Accommodations).
+   - Each slot accepts: .csv or .xlsx
+   - If .xlsx is uploaded, read the correct sheet by name:
+     - "Cities", "Activities", "Accommodations"
+     OR allow user to choose sheet from a dropdown if names differ.
+
+5) Automatic validation & self-review (must run immediately after file upload, before import):
+   - Validate required headers EXACTLY match expected schema per dataset.
+   - Validate allowed values:
+     - tier_required: free|smart|professional
+     - budget_level: low|medium|high
+     - best_time: morning|afternoon|evening
+     - accommodations.class: economy|mid|luxury
+     - booleans: TRUE/FALSE or true/false or 1/0 (normalize)
+   - Validate relationships:
+     - activities.city_id must exist in Cities upload OR already in DB
+     - accommodations.city_id must exist in Cities upload OR already in DB
+   - Validate uniqueness within the uploaded data:
+     - no duplicate city_id, activity_id, accommodation_id
+   - Validate minimal content quality:
+     - description_ar must not be empty for Cities and Activities
+   - If any validation fails:
+     - show a clear Arabic error report (row number + column + reason)
+     - block import
+
+6) Preview:
+   - Show a preview table (first 10 rows) per dataset.
+   - Show counts: total rows, valid rows, invalid rows.
+
+7) Import behavior:
+   - Import runs only after clicking "تأكيد الاستيراد".
+   - Use upsert by stable keys:
+     - Cities: city_id
+     - Activities: activity_id
+     - Accommodations: accommodation_id
+   - If exists -> update, else insert.
+   - Never delete existing records.
+   - Preserve Arabic text correctly.
+
+8) Results report (after import):
+   - Inserted/Updated counts per dataset
+   - Any skipped rows with reasons
+   - Buttons/links to view data in:
+     - /admin/cities
+     - /admin/activities
+     - /admin/accommodations
+
+Constraints:
+- Minimal changes, no redesign
+- No external APIs
+
+Output:
+- Files changed
+- How to use the import feature (steps)
+- Confirmation summary

@@ -431,8 +431,8 @@ export const appRouter = router({
             const activity = allShuffled.find(a => !usedActivityIds.has(a.id));
             if (!activity) break;
             usedActivityIds.add(activity.id);
-            const slotIdx = dayActivities.length % timeSlots.length;
-            const slot = timeSlots[slotIdx];
+            const slotIdx: number = dayActivities.length % timeSlots.length;
+            const slot: { time: string; period: string; slot: string } = timeSlots[slotIdx];
             dayActivities.push({
               time: slot.time,
               period: slot.period,
@@ -1007,6 +1007,156 @@ export const appRouter = router({
           return { success: true };
         }),
     }),
+
+    bulkImport: protectedProcedure
+      .input(z.object({
+        cities: z.array(z.object({
+          nameAr: z.string(),
+          nameEn: z.string().optional(),
+          descriptionAr: z.string().optional(),
+          descriptionEn: z.string().optional(),
+          image: z.string().optional(),
+          region: z.string().optional(),
+          isActive: z.boolean().optional(),
+        })).optional(),
+        activities: z.array(z.object({
+          destinationId: z.number(),
+          name: z.string(),
+          nameEn: z.string().optional(),
+          type: z.string(),
+          category: z.string().optional(),
+          tags: z.array(z.string()).optional(),
+          details: z.string().optional(),
+          detailsEn: z.string().optional(),
+          duration: z.string().optional(),
+          cost: z.string().optional(),
+          budgetLevel: z.string().optional(),
+          bestTimeOfDay: z.string().optional(),
+          minTier: z.string().optional(),
+          isActive: z.boolean().optional(),
+        })).optional(),
+        accommodations: z.array(z.object({
+          destinationId: z.number(),
+          nameAr: z.string(),
+          nameEn: z.string().optional(),
+          descriptionAr: z.string().optional(),
+          descriptionEn: z.string().optional(),
+          class: z.string(),
+          priceRange: z.string().optional(),
+          googlePlaceId: z.string().optional(),
+          googleMapsUrl: z.string().optional(),
+          rating: z.string().optional(),
+          isActive: z.boolean().optional(),
+        })).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const authHeader = ctx.req.headers.authorization;
+        if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        
+        const token = authHeader.substring(7);
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+        const user = await db.getUserById(decoded.userId);
+        
+        if (!user || user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN' });
+        }
+
+        const results: any = {};
+
+        if (input.cities && input.cities.length > 0) {
+          let inserted = 0;
+          let updated = 0;
+          for (const city of input.cities) {
+            const existing = await db.getDestinationByName(city.nameAr);
+            if (existing) {
+              await db.updateDestination(existing.id, {
+                nameEn: city.nameEn || existing.nameEn,
+                descriptionAr: city.descriptionAr || existing.descriptionAr,
+                descriptionEn: city.descriptionEn || existing.descriptionEn,
+                isActive: city.isActive !== undefined ? city.isActive : existing.isActive,
+              });
+              updated++;
+            } else {
+              await db.createDestination({
+                nameAr: city.nameAr,
+                nameEn: city.nameEn || city.nameAr,
+                slug: city.nameAr.toLowerCase().replace(/\s+/g, '-'),
+                titleAr: city.nameAr,
+                titleEn: city.nameEn || city.nameAr,
+                descriptionAr: city.descriptionAr || '',
+                descriptionEn: city.descriptionEn || '',
+                images: city.image ? [city.image] : [],
+                isActive: city.isActive !== false,
+              });
+              inserted++;
+            }
+          }
+          results.cities = { inserted, updated };
+        }
+
+        if (input.activities && input.activities.length > 0) {
+          let inserted = 0;
+          let updated = 0;
+          for (const activity of input.activities) {
+            const existing = await db.getActivityByNameAndDestination(activity.name, activity.destinationId);
+            const activityData = {
+              destinationId: activity.destinationId,
+              name: activity.name,
+              nameEn: activity.nameEn,
+              type: activity.type,
+              category: activity.category as any,
+              tags: activity.tags,
+              details: activity.details,
+              detailsEn: activity.detailsEn,
+              duration: activity.duration,
+              cost: activity.cost,
+              budgetLevel: activity.budgetLevel as any,
+              bestTimeOfDay: activity.bestTimeOfDay as any,
+              minTier: (activity.minTier || 'free') as any,
+              isActive: activity.isActive !== false,
+            };
+            if (existing) {
+              await db.updateActivity(existing.id, activityData);
+              updated++;
+            } else {
+              await db.createActivity(activityData);
+              inserted++;
+            }
+          }
+          results.activities = { inserted, updated };
+        }
+
+        if (input.accommodations && input.accommodations.length > 0) {
+          let inserted = 0;
+          let updated = 0;
+          for (const acc of input.accommodations) {
+            const existing = await db.getAccommodationByNameAndDestination(acc.nameAr, acc.destinationId);
+            const accData = {
+              destinationId: acc.destinationId,
+              nameAr: acc.nameAr,
+              nameEn: acc.nameEn,
+              descriptionAr: acc.descriptionAr,
+              descriptionEn: acc.descriptionEn,
+              class: (acc.class || 'mid') as any,
+              priceRange: acc.priceRange,
+              googlePlaceId: acc.googlePlaceId,
+              googleMapsUrl: acc.googleMapsUrl,
+              rating: acc.rating,
+              isActive: acc.isActive !== false,
+            };
+            if (existing) {
+              await db.updateAccommodation(existing.id, accData);
+              updated++;
+            } else {
+              await db.createAccommodation(accData);
+              inserted++;
+            }
+          }
+          results.accommodations = { inserted, updated };
+        }
+
+        return results;
+      }),
   }),
 
   support: router({
