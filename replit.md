@@ -133,6 +133,13 @@ For bulk imports, use XLSX files with these exact sheet names: **Cities**, **Act
 - Trip owners can cancel sharing anytime
 
 ## Recent Changes
+- 2026-01-16: Mobile UX Polish and Authentication Improvements
+  - Fixed carousel autoplay dots sync on iOS using ref pattern to avoid stale closure issues
+  - Added "تذكرني" (Remember Me) checkbox to login with dynamic JWT expiry (30d vs 1d)
+  - Refactored AdminLayout for mobile with Sheet-based drawer navigation and sticky header
+  - Added collapsible Accordion for Admin Import column guide (prevents UI overlay)
+  - Fixed button layout shift by removing active:scale transform and adding leading-none
+  - Verified translation consistency in Navbar (Arabic/English) and AdminLayout (Arabic-only admin UI)
 - 2026-01-16: Idempotent Bulk Import with True UPSERT
   - Added PostgreSQL ON CONFLICT DO UPDATE for destinations, activities, accommodations
   - New functions: upsertDestinationByExternalId, upsertActivityByExternalId, upsertAccommodationByExternalId
