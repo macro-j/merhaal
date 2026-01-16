@@ -3,6 +3,7 @@ import { Navbar } from "@/components/Navbar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
@@ -19,6 +20,7 @@ export default function Login() {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
 
   const content = {
@@ -31,6 +33,7 @@ export default function Login() {
       passwordPlaceholder: "••••••••",
       submitBtn: "دخول",
       loadingBtn: "جارٍ الدخول...",
+      rememberMe: "تذكرني",
       noAccount: "ليس لديك حساب؟",
       createAccount: "أنشئ حسابًا",
       forgotPassword: "نسيت كلمة المرور؟",
@@ -50,6 +53,7 @@ export default function Login() {
       passwordPlaceholder: "••••••••",
       submitBtn: "Sign In",
       loadingBtn: "Signing in...",
+      rememberMe: "Remember me",
       noAccount: "No account?",
       createAccount: "Create one",
       forgotPassword: "Forgot password?",
@@ -100,7 +104,7 @@ export default function Login() {
     e.preventDefault();
     setErrors({});
     if (!validate()) return;
-    loginMutation.mutate({ email, password });
+    loginMutation.mutate({ email, password, rememberMe });
   };
 
   const handleFieldChange = (field: keyof FormErrors, value: string) => {
@@ -176,7 +180,21 @@ export default function Login() {
               )}
             </div>
 
-            <div className="text-end">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="rememberMe"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked === true)}
+                  className="h-5 w-5"
+                />
+                <label
+                  htmlFor="rememberMe"
+                  className="text-sm text-muted-foreground cursor-pointer select-none"
+                >
+                  {t.rememberMe}
+                </label>
+              </div>
               <button
                 type="button"
                 onClick={() => setLocation("/forgot-password")}

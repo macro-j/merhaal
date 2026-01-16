@@ -71,6 +71,7 @@ export const appRouter = router({
       .input(z.object({
         email: z.string().email(),
         password: z.string(),
+        rememberMe: z.boolean().optional().default(false),
       }))
       .mutation(async ({ input }) => {
         // Find user
@@ -94,11 +95,12 @@ export const appRouter = router({
         // Update last sign in
         await db.updateUserLastSignIn(user.id);
 
-        // Generate JWT
+        // Generate JWT with dynamic expiry based on rememberMe
+        const tokenExpiry = input.rememberMe ? '30d' : '1d';
         const token = jwt.sign(
           { userId: user.id, email: user.email },
           JWT_SECRET,
-          { expiresIn: JWT_EXPIRES_IN }
+          { expiresIn: tokenExpiry }
         );
 
         return {

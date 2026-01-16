@@ -8,10 +8,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { trpc } from "@/lib/trpc";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
-import { Upload, FileSpreadsheet, CheckCircle2, XCircle, AlertTriangle, Loader2, Building2, MapPin, Hotel, ArrowRight, Download, FileArchive } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle2, XCircle, AlertTriangle, Loader2, Building2, MapPin, Hotel, ArrowRight, Download, FileArchive, Info } from "lucide-react";
 import * as XLSX from "xlsx";
 
 interface ValidationError {
@@ -877,6 +878,48 @@ export default function AdminImport() {
             </AlertDescription>
           </Alert>
         )}
+
+        <Accordion type="single" collapsible className="mb-6">
+          <AccordionItem value="guide" className="border rounded-lg px-4">
+            <AccordionTrigger className="hover:no-underline py-3">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Info className="w-4 h-4 text-primary" />
+                دليل الأعمدة المطلوبة
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="grid gap-4 md:grid-cols-3 pb-2">
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm flex items-center gap-2">
+                    <Building2 className="w-4 h-4" /> المدن (Cities)
+                  </h4>
+                  <div className="text-xs space-y-1">
+                    <p><strong>مطلوب:</strong> {CITIES_REQUIRED_HEADERS.join(', ')}</p>
+                    <p className="text-muted-foreground"><strong>اختياري:</strong> {CITIES_OPTIONAL_HEADERS.join(', ')}</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm flex items-center gap-2">
+                    <MapPin className="w-4 h-4" /> الأنشطة (Activities)
+                  </h4>
+                  <div className="text-xs space-y-1">
+                    <p><strong>مطلوب:</strong> {ACTIVITIES_REQUIRED_HEADERS.join(', ')}</p>
+                    <p className="text-muted-foreground"><strong>اختياري:</strong> {ACTIVITIES_OPTIONAL_HEADERS.join(', ')}</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm flex items-center gap-2">
+                    <Hotel className="w-4 h-4" /> الإقامات (Accommodations)
+                  </h4>
+                  <div className="text-xs space-y-1">
+                    <p><strong>مطلوب:</strong> {ACCOMMODATIONS_REQUIRED_HEADERS.join(', ')}</p>
+                    <p className="text-muted-foreground"><strong>اختياري:</strong> {ACCOMMODATIONS_OPTIONAL_HEADERS.join(', ')}</p>
+                  </div>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
         <Tabs value={importMode} onValueChange={(v) => setImportMode(v as 'unified' | 'separate')}>
           <TabsList className="grid w-full grid-cols-2 max-w-md">

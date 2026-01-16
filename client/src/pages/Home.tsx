@@ -59,6 +59,12 @@ export default function Home() {
 
   // Autoplay carousel with iOS Safari support
   const totalSlides = 5; // Number of cities in carousel
+  const activeIndexRef = useRef(activeIndex);
+  
+  useEffect(() => {
+    activeIndexRef.current = activeIndex;
+  }, [activeIndex]);
+  
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReducedMotion || isHovering || isDragging) return;
@@ -66,29 +72,25 @@ export default function Home() {
     const carousel = carouselRef.current;
     if (!carousel) return;
 
-    let animationId: number;
-    let lastTime = 0;
     const autoplayInterval = 3500;
 
-    const autoplay = (currentTime: number) => {
-      if (currentTime - lastTime >= autoplayInterval) {
-        lastTime = currentTime;
-        const isMobile = window.innerWidth < 768;
-        const cardWidth = isMobile ? carousel.offsetWidth * 0.92 : 340;
-        const gap = isMobile ? 12 : 24;
-        
-        const nextIndex = activeIndex >= totalSlides - 1 ? 0 : activeIndex + 1;
-        const nextScroll = nextIndex * (cardWidth + gap);
-        
-        carousel.scrollTo({ left: nextScroll, behavior: 'smooth' });
-        setActiveIndex(nextIndex);
-      }
-      animationId = requestAnimationFrame(autoplay);
-    };
+    const intervalId = setInterval(() => {
+      if (!carousel) return;
+      
+      const isMobile = window.innerWidth < 768;
+      const cardWidth = isMobile ? carousel.offsetWidth * 0.92 : 340;
+      const gap = isMobile ? 12 : 24;
+      
+      const currentIndex = activeIndexRef.current;
+      const nextIndex = currentIndex >= totalSlides - 1 ? 0 : currentIndex + 1;
+      const nextScroll = nextIndex * (cardWidth + gap);
+      
+      carousel.scrollTo({ left: nextScroll, behavior: 'smooth' });
+      setActiveIndex(nextIndex);
+    }, autoplayInterval);
 
-    animationId = requestAnimationFrame(autoplay);
-    return () => cancelAnimationFrame(animationId);
-  }, [isHovering, isDragging, activeIndex]);
+    return () => clearInterval(intervalId);
+  }, [isHovering, isDragging]);
 
   // Handle touch events for pause on drag
   useEffect(() => {

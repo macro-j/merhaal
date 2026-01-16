@@ -1,0 +1,48 @@
+Final mobile + UX polish (one pass). Minimal targeted changes only. No refactor, no redesign, keep current theme.
+
+Fix ALL of the following:
+
+A) Cities carousel on iPhone (autoplay + dots sync)
+- City slider must autoplay every 3–4 seconds on iPhone/mobile.
+- Autoplay pauses only while user is actively touching/dragging.
+- Pagination dots must:
+  - Reflect active slide correctly
+  - Update on autoplay advance
+  - Be clickable to jump to a slide
+- Ensure no horizontal scroll and correct RTL alignment.
+- Use the slider library’s official autoplay/pagination syncing if available; otherwise implement a lightweight interval/requestAnimationFrame that keeps index state in sync.
+
+B) Login “Remember me” (تذكرني)
+- Add a checkbox “تذكرني” on the login form.
+- If checked: keep user logged in longer (e.g., 30 days).
+- If unchecked: shorter expiry (e.g., 1 day).
+- Implement by adjusting JWT/token expiry (and/or refresh token if you have it) based on the checkbox.
+- Logout must clear stored auth token as usual.
+
+C) Mobile responsiveness (Apple-like, iPhone-first)
+- Make all key pages responsive on iPhone widths (375/390/430):
+  /, /packages, /login, /plan-trip, /my-plans, /admin, /admin/import, /admin/support
+- Sidebar must become a proper mobile drawer/sheet; must not squeeze content.
+- No horizontal scrolling anywhere.
+- Tap targets >= 44px, consistent spacing, consistent rounded corners, light shadows only (Apple-like feel) without changing colors.
+
+D) Fix Admin Import overlay covering UI
+- The “required columns / guide” section currently covers important UI (logout/back/buttons).
+- Convert it to:
+  - collapsible accordion (default collapsed) OR
+  - modal opened by “عرض الأعمدة”
+- Ensure it never overlays content; add bottom padding if needed.
+
+E) Fix button “jump”/layout shift
+- Two buttons currently jump/shift size/position when states change (hover/loading/disabled).
+- Ensure stable button height/width and consistent padding across all states.
+- Avoid font-size changes on hover; keep line-height stable.
+
+F) Translation + RTL/LTR consistency
+- Audit navbar/sidebar/admin labels and fix Arabic/English strings for consistency.
+- Ensure RTL/LTR direction is correct for both languages across menus and drawers.
+- Fix any remaining Arabic tanween issues if found (use "ًا" not "اً").
+
+Output requirements:
+- List exact files changed.
+- Short checklist confirming each section A–F is fixed.
