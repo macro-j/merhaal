@@ -24,9 +24,9 @@ export default function Packages() {
 
   const packages = [
     {
-      id: "basic",
+      id: "free",
       name: "أساسي",
-      nameEn: "Basic",
+      nameEn: "Free",
       title: "ابدأ رحلتك بسهولة",
       titleEn: "Start your journey easily",
       description: "مناسب لمن يريد خطة سريعة وواضحة دون تعقيد.",
@@ -45,9 +45,9 @@ export default function Packages() {
       ],
     },
     {
-      id: "advanced",
-      name: "متقدم",
-      nameEn: "Advanced",
+      id: "smart",
+      name: "ذكي",
+      nameEn: "Smart",
       title: "خطط رحلتك بطريقتك",
       titleEn: "Plan your trip your way",
       description: "تحكم أكبر وتخصيص أوسع لرحلتك.",
@@ -66,9 +66,9 @@ export default function Packages() {
       ],
     },
     {
-      id: "premium",
-      name: "بريميوم",
-      nameEn: "Premium",
+      id: "professional",
+      name: "احترافي",
+      nameEn: "Professional",
       title: "التجربة الكاملة لرحلة مثالية",
       titleEn: "The complete experience for a perfect trip",
       description: "أقصى درجات التخصيص والراحة.",
@@ -77,8 +77,8 @@ export default function Packages() {
       priceEn: "SAR 29.99 / month",
       priceSecondary: "أو 249 ريال سنويًا",
       priceSecondaryEn: "or SAR 249 / year",
-      cta: "ترقية إلى بريميوم",
-      ctaEn: "Upgrade to Premium",
+      cta: "ترقية إلى احترافي",
+      ctaEn: "Upgrade to Professional",
       features: [
         { text: "تخصيص ذكي متقدم حسب الوقت والاهتمامات", textEn: "Advanced smart customization by time and interests" },
         { text: "اقتراحات أماكن فريدة وغير تقليدية", textEn: "Unique and unconventional place suggestions" },
