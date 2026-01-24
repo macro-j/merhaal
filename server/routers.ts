@@ -10,6 +10,57 @@ import crypto from "crypto";
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
 const JWT_EXPIRES_IN = "7d";
 
+/**
+ * Parse duration string to minutes
+ * Supports formats: "2 ساعة", "90 دقيقة", "1.5 ساعة"
+ * Defaults to 90 minutes if invalid or missing
+ */
+function parseDurationToMinutes(duration?: string): number {
+  if (!duration || typeof duration !== 'string') return 90;
+
+  const durationLower = duration.toLowerCase().trim();
+
+  // Match "X ساعة" (hours in Arabic)
+  const hoursMatch = durationLower.match(/^([\d.]+)\s*(?:ساعة|sa'ah|hour)/i);
+  if (hoursMatch) {
+    const hours = parseFloat(hoursMatch[1]);
+    if (!isNaN(hours)) return Math.round(hours * 60);
+  }
+
+  // Match "X دقيقة" (minutes in Arabic)
+  const minutesMatch = durationLower.match(/^([\d.]+)\s*(?:دقيقة|daqiqah|minute)/i);
+  if (minutesMatch) {
+    const minutes = parseFloat(minutesMatch[1]);
+    if (!isNaN(minutes)) return Math.round(minutes);
+  }
+
+  return 90;
+}
+
+/**
+ * Convert minutes since midnight to HH:MM format
+ */
+function minutesToTime(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+}
+
+/**
+ * Derive period from time (HH:MM format)
+ * صباحًا (morning): before 12:00
+ * ظهرًا (afternoon): 12:00–16:00
+ * مساءً (evening): after 16:00
+ */
+function derivePeriod(time: string): string {
+  const [hoursStr] = time.split(':');
+  const hours = parseInt(hoursStr, 10);
+
+  if (hours < 12) return 'صباحًا';
+  if (hours < 16) return 'ظهرًا';
+  return 'مساءً';
+}
+
 export const appRouter = router({
   system: systemRouter,
   
@@ -350,29 +401,7 @@ export const appRouter = router({
           }
         }
 
-        // Smart activity scheduling using bestTimeOfDay metadata
-        const timeSlots = [
-          { time: '09:00', period: 'صباحًا', slot: 'morning' },
-          { time: '12:00', period: 'ظهرًا', slot: 'afternoon' },
-          { time: '15:00', period: 'عصرًا', slot: 'afternoon' },
-          { time: '18:00', period: 'مساءً', slot: 'evening' },
-        ];
-        
-        // Group activities by best time of day for smarter scheduling
-        const morningActivities = filteredActivities.filter(a => a.bestTimeOfDay === 'morning');
-        const afternoonActivities = filteredActivities.filter(a => a.bestTimeOfDay === 'afternoon');
-        const eveningActivities = filteredActivities.filter(a => a.bestTimeOfDay === 'evening');
-        const anytimeActivities = filteredActivities.filter(a => !a.bestTimeOfDay || a.bestTimeOfDay === 'anytime');
-        
-        // Shuffle each group
-        const shuffleFn = (arr: any[]) => [...arr].sort(() => Math.random() - 0.5);
-        const shuffledMorning = shuffleFn(morningActivities);
-        const shuffledAfternoon = shuffleFn(afternoonActivities);
-        const shuffledEvening = shuffleFn(eveningActivities);
-        const shuffledAnytime = shuffleFn(anytimeActivities);
-
-        // Generate daily plan
-        const plan = [];
+        // Dynamic time-aware scheduling
         const dayTitles = ['اليوم الأول', 'اليوم الثاني', 'اليوم الثالث', 'اليوم الرابع', 'اليوم الخامس', 'اليوم السادس', 'اليوم السابع', 'اليوم الثامن', 'اليوم التاسع', 'اليوم العاشر'];
         
         // Enforce tier-based activity limit per day (minimum 3, maximum based on tier)
@@ -382,62 +411,48 @@ export const appRouter = router({
         // Track used activities to avoid repetition
         const usedActivityIds = new Set<number>();
         
-        // Create a combined pool with all remaining activities for fallback
+        // Helper to shuffle array
+        const shuffleFn = (arr: any[]) => [...arr].sort(() => Math.random() - 0.5);
         const allShuffled = shuffleFn(filteredActivities);
         
-        const pickActivity = (preferred: any[], fallback: any[]) => {
-          let activity = preferred.find(a => !usedActivityIds.has(a.id));
-          if (!activity) {
-            activity = fallback.find(a => !usedActivityIds.has(a.id));
-          }
-          if (!activity) {
-            activity = allShuffled.find(a => !usedActivityIds.has(a.id));
-          }
+        // Pick next available activity
+        const pickActivity = () => {
+          const activity = allShuffled.find(a => !usedActivityIds.has(a.id));
           if (activity) usedActivityIds.add(activity.id);
           return activity;
         };
 
+        const plan = [];
+        const travelBufferMinutes = 30; // Buffer between activities
+        const dayStartTime = 9 * 60; // 09:00 in minutes since midnight
+
         for (let day = 1; day <= input.days; day++) {
           const dayActivities = [];
-          
-          // First pass: try to match activities to time slots based on bestTimeOfDay
-          for (let i = 0; i < maxActivitiesPerDay; i++) {
-            const slot = timeSlots[i % timeSlots.length];
-            let activity;
-            
-            if (slot.slot === 'morning') {
-              activity = pickActivity(shuffledMorning, shuffledAnytime);
-            } else if (slot.slot === 'afternoon') {
-              activity = pickActivity(shuffledAfternoon, shuffledAnytime);
-            } else {
-              activity = pickActivity(shuffledEvening, shuffledAnytime);
-            }
-            
-            if (!activity) continue;
-            
-            dayActivities.push({
-              time: slot.time,
-              period: slot.period,
-              activity: activity.name,
-              description: activity.details || `استمتع بـ${activity.name} في ${destination.nameAr}`,
-              type: activity.type,
-              category: activity.category,
-              duration: activity.duration || '2 ساعة',
-              cost: activity.cost,
-              budgetLevel: activity.budgetLevel,
-            });
-          }
-          
-          // Ensure minimum activities per day by filling from any remaining pool
-          while (dayActivities.length < minActivitiesPerDay) {
-            const activity = allShuffled.find(a => !usedActivityIds.has(a.id));
+          let currentTimeMinutes = dayStartTime;
+          let activitiesCount = 0;
+
+          // Determine how many activities to schedule for this day
+          const targetActivitiesCount = Math.min(maxActivitiesPerDay, 
+            Math.ceil(filteredActivities.length / input.days) + 1);
+
+          while (activitiesCount < targetActivitiesCount && usedActivityIds.size < filteredActivities.length) {
+            const activity = pickActivity();
             if (!activity) break;
-            usedActivityIds.add(activity.id);
-            const slotIdx: number = dayActivities.length % timeSlots.length;
-            const slot: { time: string; period: string; slot: string } = timeSlots[slotIdx];
+
+            // Parse activity duration
+            const durationMinutes = parseDurationToMinutes(activity.duration);
+
+            // Calculate times
+            const startTimeMinutes = currentTimeMinutes;
+            const endTimeMinutes = startTimeMinutes + durationMinutes;
+            const startTime = minutesToTime(startTimeMinutes);
+            const endTime = minutesToTime(endTimeMinutes);
+            const period = derivePeriod(startTime);
+
             dayActivities.push({
-              time: slot.time,
-              period: slot.period,
+              startTime,
+              endTime,
+              period,
               activity: activity.name,
               description: activity.details || `استمتع بـ${activity.name} في ${destination.nameAr}`,
               type: activity.type,
@@ -446,6 +461,38 @@ export const appRouter = router({
               cost: activity.cost,
               budgetLevel: activity.budgetLevel,
             });
+
+            // Move to next activity time slot (add travel buffer)
+            currentTimeMinutes = endTimeMinutes + travelBufferMinutes;
+            activitiesCount++;
+          }
+
+          // Ensure minimum activities per day
+          while (dayActivities.length < minActivitiesPerDay && usedActivityIds.size < filteredActivities.length) {
+            const activity = pickActivity();
+            if (!activity) break;
+
+            const durationMinutes = parseDurationToMinutes(activity.duration);
+            const startTimeMinutes = currentTimeMinutes;
+            const endTimeMinutes = startTimeMinutes + durationMinutes;
+            const startTime = minutesToTime(startTimeMinutes);
+            const endTime = minutesToTime(endTimeMinutes);
+            const period = derivePeriod(startTime);
+
+            dayActivities.push({
+              startTime,
+              endTime,
+              period,
+              activity: activity.name,
+              description: activity.details || `استمتع بـ${activity.name} في ${destination.nameAr}`,
+              type: activity.type,
+              category: activity.category,
+              duration: activity.duration || '2 ساعة',
+              cost: activity.cost,
+              budgetLevel: activity.budgetLevel,
+            });
+
+            currentTimeMinutes = endTimeMinutes + travelBufferMinutes;
           }
 
           plan.push({

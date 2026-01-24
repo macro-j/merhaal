@@ -280,9 +280,20 @@ export default function MyPlans() {
                                   <div key={actIdx} className="flex items-start gap-3 text-sm border-s-2 border-primary/20 ps-3">
                                     <div className="min-w-0 flex-1">
                                       <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
-                                          {activity.time} {activity.period || ''}
-                                        </span>
+                                        {activity.startTime && activity.endTime ? (
+                                          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                                            {activity.startTime} – {activity.endTime}
+                                          </span>
+                                        ) : (
+                                          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                                            {activity.time} {activity.period || ''}
+                                          </span>
+                                        )}
+                                        {activity.period && activity.startTime && activity.endTime && (
+                                          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                                            {activity.period}
+                                          </span>
+                                        )}
                                         {activity.duration && (
                                           <span className="text-xs text-muted-foreground">
                                             {activity.duration}
