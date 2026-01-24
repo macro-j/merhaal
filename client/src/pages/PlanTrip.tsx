@@ -10,6 +10,7 @@ import { Loader2, MapPin, Calendar, DollarSign, Heart } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import { destinationImages } from "@/constants/destinationImages";
 
 export default function PlanTrip() {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ export default function PlanTrip() {
   const { data: destinations, isLoading: destinationsLoading } = trpc.destinations.list.useQuery();
   
   const [selectedDestination, setSelectedDestination] = useState<number | null>(null);
+  const [failedImages, setFailedImages] = useState<Set<number>>(new Set());
   const [days, setDays] = useState(1);
   const [budget, setBudget] = useState(500);
   const [interests, setInterests] = useState<string[]>([]);
@@ -46,6 +48,28 @@ export default function PlanTrip() {
         ? prev.filter(i => i !== interest)
         : [...prev, interest]
     );
+  };
+
+  const getFallbackImage = (dest: any): string => {
+    const slug = dest.nameEn?.toLowerCase().replace(/\s+/g, '') || '';
+    const fallbackMap: { [key: string]: string } = {
+      riyadh: '/attached_assets/riyadh.jpg',
+      jeddah: '/attached_assets/jeddah.jpg',
+      alula: '/attached_assets/alula.jpg',
+      abha: '/attached_assets/abha.jpg',
+    };
+    return fallbackMap[slug] || '/attached_assets/fallback-city.jpg';
+  };
+
+  const getImageSrc = (dest: any): string => {
+    if (failedImages.has(dest.id)) {
+      return getFallbackImage(dest);
+    }
+    return dest.images?.[0] || getFallbackImage(dest);
+  };
+
+  const handleImageError = (destId: number) => {
+    setFailedImages(prev => new Set([...prev, destId]));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -123,9 +147,10 @@ export default function PlanTrip() {
                     >
                       <div className="aspect-video relative">
                         <img
-                          src={dest.images[0]}
+                          src={getImageSrc(dest)}
                           alt={dest.nameAr}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover bg-gradient-to-br from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700"
+                          onError={() => handleImageError(dest.id)}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                         <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
