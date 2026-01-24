@@ -357,7 +357,7 @@ export default function TripDetails() {
                   </CardTitle>
                   {day.dayBudgetSummary && (
                     <p className="text-xs text-muted-foreground">
-                      ملخص اليوم: ميزانية {Math.round(day.dayBudgetSummary.dailyBudget)} ر.س • السكن {Math.round(day.dayBudgetSummary.accommodationCostPerNight)} ر.س • المتبقي {Math.round(day.dayBudgetSummary.remainingAfterAccommodation)} ر.س
+                      ملخص اليوم: ميزانية {Math.round(day.dayBudgetSummary.dailyBudget)} ر.س • السكن {Math.round(day.dayBudgetSummary.accommodationCostPerNight)} ر.س • الأنشطة {Math.round(day.dayBudgetSummary.activitiesCost ?? 0)} ر.س • المتبقي بعد الأنشطة {Math.round(day.dayBudgetSummary.remainingAfterActivities ?? day.dayBudgetSummary.remainingAfterAccommodation ?? 0)} ر.س
                     </p>
                   )}
                 </div>
