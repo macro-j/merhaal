@@ -272,7 +272,7 @@ export default function TripDetails() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <div>
+                <div className="flex-1">
                   <h3 className="font-semibold">{plan.accommodation.name}</h3>
                   <p className="text-sm text-muted-foreground">
                     {plan.accommodation.class === 'luxury' ? 'فاخر' : 
@@ -296,6 +296,36 @@ export default function TripDetails() {
                   عرض على خرائط Google
                 </a>
               </div>
+              
+              {(plan?.dailyBudget || plan?.accommodationCostPerNight || plan?.remainingAfterAccommodation) && (
+                <div className="mt-4 pt-4 border-t">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                    {plan?.dailyBudget && (
+                      <div>
+                        <p className="text-muted-foreground">ميزانية اليوم</p>
+                        <p className="font-semibold text-primary">{Math.round(plan.dailyBudget)} ر.س</p>
+                      </div>
+                    )}
+                    {plan?.accommodationCostPerNight !== undefined && (
+                      <div>
+                        <p className="text-muted-foreground">تكلفة السكن/ليلة (تقديري)</p>
+                        <p className="font-semibold text-primary">{Math.round(plan.accommodationCostPerNight)} ر.س</p>
+                      </div>
+                    )}
+                    {plan?.remainingAfterAccommodation !== undefined && (
+                      <div>
+                        <p className="text-muted-foreground">المتبقي بعد السكن</p>
+                        <p className="font-semibold text-primary">{Math.round(plan.remainingAfterAccommodation)} ر.س</p>
+                      </div>
+                    )}
+                  </div>
+                  {plan?.budgetNote && (
+                    <p className="mt-3 text-xs text-muted-foreground italic">
+                      {plan.budgetNote}
+                    </p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         ) : plan?.noAccommodationMessage ? (
@@ -320,10 +350,17 @@ export default function TripDetails() {
           {plan?.dailyPlan?.map((day: any, dayIdx: number) => (
             <Card key={dayIdx}>
               <CardHeader className="pb-3 bg-muted/30">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-primary" />
-                  {day.title || `اليوم ${day.day}`}
-                </CardTitle>
+                <div>
+                  <CardTitle className="text-lg flex items-center gap-2 mb-2">
+                    <Calendar className="w-5 h-5 text-primary" />
+                    {day.title || `اليوم ${day.day}`}
+                  </CardTitle>
+                  {day.dayBudgetSummary && (
+                    <p className="text-xs text-muted-foreground">
+                      ملخص اليوم: ميزانية {Math.round(day.dayBudgetSummary.dailyBudget)} ر.س • السكن {Math.round(day.dayBudgetSummary.accommodationCostPerNight)} ر.س • المتبقي {Math.round(day.dayBudgetSummary.remainingAfterAccommodation)} ر.س
+                    </p>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="p-4 space-y-4">
                 {day.activities?.length === 0 ? (
