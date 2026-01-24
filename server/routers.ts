@@ -403,6 +403,72 @@ export const appRouter = router({
           qualityLevel = 'عالية';
         }
 
+        // Select accommodation early to compute remaining budget
+        const preferredClass = input.accommodationType === 'فاخر' ? 'luxury' : 
+                              input.accommodationType === 'اقتصادي' ? 'economy' : 'mid';
+        
+        // Try classes in fallback order: luxury -> mid -> economy
+        const classOrderByPreference: Array<'luxury' | 'mid' | 'economy'> = ['luxury', 'mid', 'economy'];
+        const preferredIndex = classOrderByPreference.indexOf(preferredClass);
+        const orderedClasses = classOrderByPreference.slice(preferredIndex).concat(classOrderByPreference.slice(0, preferredIndex));
+        
+        let selectedAccommodation: any = null;
+        let accommodationSelectionNote: string | null = null;
+        
+        // Try each class in order, checking affordability
+        for (const classToTry of orderedClasses) {
+          const candidateAccommodations = accommodations.filter(a => a.class === classToTry && a.isActive);
+          
+          for (const accommodation of candidateAccommodations) {
+            const priceInfo = parsePriceRangeToMinMax(accommodation.priceRange || undefined);
+            
+            // If we have price info, check if minimum price is within daily budget
+            if (priceInfo.min !== undefined) {
+              if (priceInfo.min > dailyBudget) {
+                // This accommodation is too expensive, skip it
+                continue;
+              }
+            }
+            
+            // Found an affordable accommodation
+            selectedAccommodation = accommodation;
+            
+            // Generate selection note if we fell back to a cheaper class
+            if (classToTry !== preferredClass) {
+              const classLabels: { [key: string]: string } = {
+                'luxury': 'فاخرة',
+                'mid': 'متوسطة',
+                'economy': 'اقتصادية',
+              };
+              const preferredLabel = classLabels[preferredClass];
+              const selectedLabel = classLabels[classToTry];
+              accommodationSelectionNote = `تم اختيار إقامة ${selectedLabel} لأن الميزانية اليومية (${dailyBudget} ر.س) لا تناسب إقامة ${preferredLabel}.`;
+            }
+            
+            break;
+          }
+          
+          if (selectedAccommodation) break;
+        }
+        
+        // Calculate accommodation costs
+        let accommodationMinPricePerNight: number | null = null;
+        let accommodationAvgPricePerNight: number | null = null;
+        
+        if (selectedAccommodation) {
+          const priceInfo = parsePriceRangeToMinMax(selectedAccommodation.priceRange || undefined);
+          if (priceInfo.min !== undefined) {
+            accommodationMinPricePerNight = priceInfo.min;
+          }
+          if (priceInfo.min !== undefined && priceInfo.max !== undefined) {
+            accommodationAvgPricePerNight = Math.round((priceInfo.min + priceInfo.max) / 2);
+          }
+        }
+        
+        // Compute daily budget breakdown
+        const accommodationCostPerNight = accommodationMinPricePerNight ?? 0;
+        const remainingAfterAccommodation = Math.max(dailyBudget - accommodationCostPerNight, 0);
+
         // Filter activities by tier and budget
         let filteredActivities = activities.filter(activity => {
           const activityTier = activity.minTier || 'free';
@@ -448,6 +514,28 @@ export const appRouter = router({
           });
           if (interestFiltered.length >= input.days * 2) {
             filteredActivities = interestFiltered;
+          }
+        }
+
+        // Apply budget-based activity filtering based on remaining budget after accommodation
+        let budgetActivityNote: string | null = null;
+        if (remainingAfterAccommodation < 150) {
+          // Restrict activities based on remaining budget
+          if (remainingAfterAccommodation < 50) {
+            // Only allow free/low budget activities
+            filteredActivities = filteredActivities.filter(activity => {
+              const budgetLevel = activity.budgetLevel || 'medium';
+              const cost = parseFloat(activity.cost || '0');
+              return budgetLevel === 'low' || cost === 0;
+            });
+            budgetActivityNote = 'تم تقييد الأنشطة لتناسب المتبقي بعد السكن.';
+          } else {
+            // Allow low + medium, exclude high
+            filteredActivities = filteredActivities.filter(activity => {
+              const budgetLevel = activity.budgetLevel || 'medium';
+              return budgetLevel !== 'high';
+            });
+            budgetActivityNote = 'تم تقييد الأنشطة لتناسب المتبقي بعد السكن.';
           }
         }
 
@@ -505,7 +593,7 @@ export const appRouter = router({
         const travelBufferMinutes = 30; // Buffer between activities
         const dayStartTime = 9 * 60; // 09:00 in minutes since midnight
         const dayEndTimeMinutes = 23 * 60; // 23:00 (11 PM) - prevent scheduling past this time
-
+let remainingTripBudget = input.budget;
         for (let day = 1; day <= input.days; day++) {
           const dayActivities = [];
           let currentTimeMinutes = dayStartTime;
@@ -532,122 +620,139 @@ export const appRouter = router({
             const startTime = minutesToTime(startTimeMinutes);
             const endTime = minutesToTime(endTimeMinutes);
             const period = derivePeriod(startTime);
-            const estimatedCost = estimateCost(activity.cost, activity.budgetLevel);
+            let estimatedCost = estimateCost(activity.cost, activity.budgetLevel);
 
-            dayActivities.push({
-              startTime,
-              endTime,
-              period,
-              activity: activity.name,
-              description: activity.details || `استمتع بـ${activity.name} في ${destination.nameAr}`,
-              type: activity.type,
-              category: activity.category,
-              duration: activity.duration || '2 ساعة',
-              cost: activity.cost,
-              budgetLevel: activity.budgetLevel,
-              estimatedCost,
-            });
-
-            // Move to next activity time slot (add travel buffer)
-            currentTimeMinutes = endTimeMinutes + travelBufferMinutes;
-            activitiesCount++;
-          }
-
-          // Ensure minimum activities per day
-          while (dayActivities.length < minActivitiesPerDay && usedActivityIds.size < filteredActivities.length) {
-            const activity = pickActivity();
-            if (!activity) break;
-
-            const durationMinutes = parseDurationToMinutes(activity.duration);
-            const startTimeMinutes = currentTimeMinutes;
-            const endTimeMinutes = startTimeMinutes + durationMinutes;
-
-            // Prevent scheduling past 23:00 (day end cutoff)
-            if (endTimeMinutes > dayEndTimeMinutes) break;
-
-            const startTime = minutesToTime(startTimeMinutes);
-            const endTime = minutesToTime(endTimeMinutes);
-            const period = derivePeriod(startTime);
-            const estimatedCost = estimateCost(activity.cost, activity.budgetLevel);
-
-            dayActivities.push({
-              startTime,
-              endTime,
-              period,
-              activity: activity.name,
-              description: activity.details || `استمتع بـ${activity.name} في ${destination.nameAr}`,
-              type: activity.type,
-              category: activity.category,
-              duration: activity.duration || '2 ساعة',
-              cost: activity.cost,
-              budgetLevel: activity.budgetLevel,
-              estimatedCost,
-            });
-
-            currentTimeMinutes = endTimeMinutes + travelBufferMinutes;
-          }
-
-          // Calculate day total cost
-          const dayTotalCost = dayActivities.reduce((sum, act) => sum + (act.estimatedCost || 0), 0);
-
-          plan.push({
-            day,
-            title: dayTitles[day - 1] || `اليوم ${day}`,
-            activities: dayActivities,
-            dayTotalCost,
-          });
-        }
-
-        // Select accommodation by class matching with budget-aware fallback
-        const preferredClass = input.accommodationType === 'فاخر' ? 'luxury' : 
-                              input.accommodationType === 'اقتصادي' ? 'economy' : 'mid';
-        
-        // Try classes in fallback order: luxury -> mid -> economy
-        const classOrderByPreference: Array<'luxury' | 'mid' | 'economy'> = ['luxury', 'mid', 'economy'];
-        const preferredIndex = classOrderByPreference.indexOf(preferredClass);
-        const orderedClasses = classOrderByPreference.slice(preferredIndex).concat(classOrderByPreference.slice(0, preferredIndex));
-        
-        let selectedAccommodation: any = null;
-        let accommodationSelectionNote: string | null = null;
-        
-        // Try each class in order, checking affordability
-        for (const classToTry of orderedClasses) {
-          const candidateAccommodations = accommodations.filter(a => a.class === classToTry && a.isActive);
-          
-          for (const accommodation of candidateAccommodations) {
-            const priceInfo = parsePriceRangeToMinMax(accommodation.priceRange || undefined);
-            
-            // If we have price info, check if minimum price is within daily budget
-            if (priceInfo.min !== undefined) {
-              if (priceInfo.min > dailyBudget) {
-                // This accommodation is too expensive, skip it
-                continue;
-              }
-            }
-            
-            // Found an affordable accommodation
-            selectedAccommodation = accommodation;
-            
-            // Generate selection note if we fell back to a cheaper class
-            if (classToTry !== preferredClass) {
-              const classLabels: { [key: string]: string } = {
-                'luxury': 'فاخرة',
-                'mid': 'متوسطة',
-                'economy': 'اقتصادية',
+            // Apply smart fallback if estimatedCost is 0
+            if (!estimatedCost || estimatedCost === 0) {
+              const categoryFallback: { [key: string]: number } = {
+                'مطاعم': 80,
+                'ترفيه': 60,
+                'تسوق': 100,
+                'ثقافة': 30,
+                'تراث': 20,
+                'طبيعة': 10,
+                'مغامرات': 120,
+                'عائلي': 50,
               };
-              const preferredLabel = classLabels[preferredClass];
-              const selectedLabel = classLabels[classToTry];
-              accommodationSelectionNote = `تم اختيار إقامة ${selectedLabel} لأن الميزانية اليومية (${dailyBudget} ر.س) لا تناسب إقامة ${preferredLabel}.`;
+              const category = activity.category || activity.type || '';
+              estimatedCost = categoryFallback[category] || 40;
             }
-            
-            break;
-          }
-          
-          if (selectedAccommodation) break;
-        }
+
+// =======================
+// 1) إضافة الأنشطة الأساسية
+// =======================
+dayActivities.push({
+  startTime,
+  endTime,
+  period,
+  activity: activity.name,
+  description: activity.details || `استمتع بـ${activity.name} في ${destination.nameAr}`,
+  type: activity.type,
+  category: activity.category,
+  duration: activity.duration || '2 ساعة',
+  cost: activity.cost,
+  budgetLevel: activity.budgetLevel,
+  estimatedCost,
+});
+
+currentTimeMinutes = endTimeMinutes + travelBufferMinutes;
+activitiesCount++;
+}
+
+// =======================
+// 2) ضمان الحد الأدنى من الأنشطة
+// =======================
+while (
+  dayActivities.length < minActivitiesPerDay &&
+  usedActivityIds.size < filteredActivities.length
+) {
+  const activity = pickActivity();
+  if (!activity) break;
+
+  const durationMinutes = parseDurationToMinutes(activity.duration);
+  const startTimeMinutes = currentTimeMinutes;
+  const endTimeMinutes = startTimeMinutes + durationMinutes;
+
+  if (endTimeMinutes > dayEndTimeMinutes) break;
+
+  const startTime = minutesToTime(startTimeMinutes);
+  const endTime = minutesToTime(endTimeMinutes);
+  const period = derivePeriod(startTime);
+  let estimatedCost = estimateCost(activity.cost, activity.budgetLevel);
+
+  // Apply smart fallback if estimatedCost is 0
+  if (!estimatedCost || estimatedCost === 0) {
+    const categoryFallback: { [key: string]: number } = {
+      'مطاعم': 80,
+      'ترفيه': 60,
+      'تسوق': 100,
+      'ثقافة': 30,
+      'تراث': 20,
+      'طبيعة': 10,
+      'مغامرات': 120,
+      'عائلي': 50,
+    };
+    const category = activity.category || activity.type || '';
+    estimatedCost = categoryFallback[category] || 40;
+  }
+
+  dayActivities.push({
+    startTime,
+    endTime,
+    period,
+    activity: activity.name,
+    description: activity.details || `استمتع بـ${activity.name} في ${destination.nameAr}`,
+    type: activity.type,
+    category: activity.category,
+    duration: activity.duration || '2 ساعة',
+    cost: activity.cost,
+    budgetLevel: activity.budgetLevel,
+    estimatedCost,
+  });
+
+  currentTimeMinutes = endTimeMinutes + travelBufferMinutes;
+}
+
+// =======================
+// 3) حساب ميزانية اليوم (مرة وحدة فقط)
+// =======================
+const dayTotalCost = dayActivities.reduce(
+  (sum, act) => sum + (act.estimatedCost || 0),
+  0
+);
+
+const remainingAfterActivities = Math.max(
+  dailyBudget - accommodationCostPerNight - dayTotalCost,
+  0
+);
+remainingTripBudget = Math.max(
+  remainingTripBudget - accommodationCostPerNight - dayTotalCost,
+  0
+);
+
+
+
+// =======================
+// 4) إضافة اليوم للخطة
+// =======================
+plan.push({
+  day,
+  title: dayTitles[day - 1] || `اليوم ${day}`,
+  activities: dayActivities,
+  dayTotalCost,
+  dayBudgetSummary: {
+    dailyBudget,
+    accommodationCostPerNight,
+    activitiesCost: dayTotalCost,
+    remainingAfterActivities,
+  },
+  remainingTripBudget, // 👈 جديد
+});
+} 
         
-        // Build accommodation info for plan
+        // Build accommodation info for plan (accommodation already selected and budgets computed earlier)
         let accommodationInfo = null;
+        
         if (selectedAccommodation) {
           accommodationInfo = {
             name: selectedAccommodation.nameAr,
@@ -660,9 +765,25 @@ export const appRouter = router({
             rating: selectedAccommodation.rating,
           };
         }
+        
+        // Determine budget note
+        let budgetNote: string | null = null;
+        if (remainingAfterAccommodation < 50) {
+          budgetNote = 'ميزانيتك اليومية تذهب للسكن تقريبًا، تم تفضيل الأنشطة المجانية والخيارات الاقتصادية.';
+        }
+        
+        // Add budget summary to each day in plan
+        const planWithBudgetSummary = plan.map(day => ({
+          ...day,
+          dayBudgetSummary: {
+            dailyBudget,
+            accommodationCostPerNight,
+            remainingAfterAccommodation,
+          },
+        }));
 
         // Calculate trip total cost and remaining budget
-        const tripTotalCost = plan.reduce((sum, day) => sum + (day.dayTotalCost || 0), 0);
+        const tripTotalCost = planWithBudgetSummary.reduce((sum, day) => sum + (day.dayTotalCost || 0), 0);
         const remainingBudget = input.budget - tripTotalCost;
 
         // Create trip record
@@ -682,7 +803,12 @@ export const appRouter = router({
             accommodation: accommodationInfo,
             accommodationSelectionNote,
             noAccommodationMessage: !selectedAccommodation ? 'لا توجد إقامات تناسب ميزانيتك في هذه المدينة' : null,
-            dailyPlan: plan,
+            dailyBudget,
+            accommodationCostPerNight,
+            remainingAfterAccommodation,
+            budgetNote,
+            budgetActivityNote,
+            dailyPlan: planWithBudgetSummary,
             tripTotalCost,
             remainingBudget,
           },
