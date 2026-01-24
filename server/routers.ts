@@ -539,8 +539,59 @@ export const appRouter = router({
           }
         }
 
+        // FINAL SAFETY BLOCK: If accommodation exhausted daily budget and no activities found, provide free alternatives
+        if (remainingAfterAccommodation <= 0 && filteredActivities.length === 0) {
+          // Try to find real free activities from the original DB list
+          const freePool = activities.filter(activity => {
+            const budgetLevel = activity.budgetLevel || 'medium';
+            const cost = parseFloat(activity.cost || '0');
+            const category = activity.category || '';
+            
+            return budgetLevel === 'low' || cost === 0 || ['طبيعة', 'تراث', 'ثقافة'].includes(category);
+          });
+          
+          if (freePool.length > 0) {
+            // Use real free activities
+            filteredActivities = freePool;
+          } else {
+            // Create simple free placeholder activities
+            const placeholders = [
+              { nameAr: 'مشي حر في ممشى قريب', nameEn: 'Walk in nearby promenade', category: 'طبيعة' },
+              { nameAr: 'زيارة حديقة عامة (مجاني)', nameEn: 'Visit public park (free)', category: 'طبيعة' },
+              { nameAr: 'جولة تصوير خارجية لمعالم المدينة (مجاني)', nameEn: 'Free outdoor photography tour of landmarks', category: 'تراث' },
+              { nameAr: 'استكشاف الأسواق التقليدية المحلية (مجاني)', nameEn: 'Explore local traditional markets (free)', category: 'ثقافة' },
+              { nameAr: 'مشاهدة المناظر الطبيعية من نقطة ارتفاع (مجاني)', nameEn: 'View natural scenery from a viewpoint (free)', category: 'طبيعة' },
+              { nameAr: 'زيارة مكتبة عامة أو متحف بدخول مجاني', nameEn: 'Visit free public library or museum', category: 'ثقافة' },
+            ];
+            
+            placeholders.forEach((placeholder, idx) => {
+              filteredActivities.push({
+                id: -(1000 + idx),
+                destinationId: input.destinationId,
+                nameAr: placeholder.nameAr,
+                nameEn: placeholder.nameEn,
+                descriptionAr: `نشاط مجاني في ${destination.nameAr}`,
+                descriptionEn: `Free activity in ${destination.nameEn}`,
+                type: placeholder.category,
+                category: placeholder.category,
+                duration: '1 ساعة',
+                cost: '0',
+                budgetLevel: 'low',
+                minTier: 'free',
+                rating: 4,
+                reviews: 50,
+              } as any);
+            });
+          }
+          
+          budgetActivityNote = 'تمت إضافة أنشطة مجانية لأن ميزانية اليوم تذهب للسكن.';
+        }
+
+        const hadActivitiesBeforeBudgetFilter = filteredActivities.length > 0;
+
+
         // Fallback: generate placeholder activities if DB is empty
-        if (filteredActivities.length === 0) {
+        if (filteredActivities.length === 0 && !hadActivitiesBeforeBudgetFilter) {
           const fallbackActivitiesPerDay = userTier === 'professional' ? 7 : userTier === 'smart' ? 4 : 2;
           const fallbackTemplates = [
             { name: `زيارة معالم ${destination.nameAr}`, type: 'سياحة', period: 'صباحًا' },
@@ -572,15 +623,24 @@ export const appRouter = router({
         const dayTitles = ['اليوم الأول', 'اليوم الثاني', 'اليوم الثالث', 'اليوم الرابع', 'اليوم الخامس', 'اليوم السادس', 'اليوم السابع', 'اليوم الثامن', 'اليوم التاسع', 'اليوم العاشر'];
         
         // Enforce tier-based activity limit per day (minimum 3, maximum based on tier)
-        const minActivitiesPerDay = 3;
-        const maxActivitiesPerDay = Math.max(minActivitiesPerDay, limits.maxActivitiesPerDay);
+        // But if accommodation exhausted budget, limit to 1-2 free activities
+        let minActivitiesPerDay = 3;
+        let maxActivitiesPerDay = Math.max(minActivitiesPerDay, limits.maxActivitiesPerDay);
+        
+        if (remainingAfterAccommodation <= 0 && budgetActivityNote === 'تمت إضافة أنشطة مجانية لأن ميزانية اليوم تذهب للسكن.') {
+          minActivitiesPerDay = 1;
+          maxActivitiesPerDay = 2;
+        }
         
         // Track used activities to avoid repetition
         const usedActivityIds = new Set<number>();
         
         // Helper to shuffle array
         const shuffleFn = (arr: any[]) => [...arr].sort(() => Math.random() - 0.5);
-        const allShuffled = shuffleFn(filteredActivities);
+        let allShuffled = shuffleFn(filteredActivities);
+
+        // Rebuild the scheduler pool after all modifications to filteredActivities (including placeholders)
+        allShuffled = shuffleFn(filteredActivities);
         
         // Pick next available activity
         const pickActivity = () => {
@@ -598,6 +658,78 @@ let remainingTripBudget = input.budget;
           const dayActivities = [];
           let currentTimeMinutes = dayStartTime;
           let activitiesCount = 0;
+          let remainingActivityBudget = Math.max(dailyBudget - accommodationCostPerNight, 0);
+          let unaffordableAttempts = 0;
+          const maxUnaffordableAttempts = 10;
+
+          // ZERO-BUDGET SAFETY: If accommodation exhausted budget, add 1-2 free activities directly
+          if (remainingAfterAccommodation <= 0) {
+            budgetActivityNote = 'تمت إضافة أنشطة مجانية لأن ميزانية اليوم تذهب للسكن.';
+            
+            const freeActivityNames = [
+              'مشي حر في ممشى قريب',
+              'زيارة حديقة عامة (مجاني)',
+              'جولة تصوير خارجية (مجاني)',
+              'استكشاف الأسواق التقليدية',
+              'مشاهدة المناظر الطبيعية',
+              'زيارة متحف بدخول مجاني',
+            ];
+            
+            const freeActivityCategories = ['طبيعة', 'تراث', 'ثقافة'];
+            const activitiesThisDay = Math.min(2, Math.max(1, Math.ceil(Math.random() * 2)));
+            
+            for (let i = 0; i < activitiesThisDay; i++) {
+              const activity = freeActivityNames[(day - 1 + i) % freeActivityNames.length];
+              const category = freeActivityCategories[i % freeActivityCategories.length];
+              const durationMinutes = 60; // 1 hour
+              const startTimeMinutes = currentTimeMinutes;
+              const endTimeMinutes = startTimeMinutes + durationMinutes;
+              
+              if (endTimeMinutes > dayEndTimeMinutes) break;
+              
+              const startTime = minutesToTime(startTimeMinutes);
+              const endTime = minutesToTime(endTimeMinutes);
+              const period = derivePeriod(startTime);
+              
+              dayActivities.push({
+                startTime,
+                endTime,
+                period,
+                activity,
+                description: `نشاط مجاني: ${activity}`,
+                type: category,
+                category,
+                duration: '1 ساعة',
+                cost: '0',
+                budgetLevel: 'low',
+                estimatedCost: 0,
+              });
+              
+              currentTimeMinutes = endTimeMinutes + travelBufferMinutes;
+            }
+            
+            // Skip normal scheduling for this day
+            const dayTotalCost = 0;
+            const remainingAfterActivities = Math.max(dailyBudget - accommodationCostPerNight, 0);
+            const dayBudgetSummary = {
+              dailyBudget,
+              accommodationCostPerNight,
+              remainingAfterAccommodation,
+              activitiesCost: 0,
+              remainingAfterActivities,
+            };
+            
+            plan.push({
+              day,
+              title: dayTitles[day - 1],
+              activities: dayActivities,
+              dayTotalCost,
+              dayBudgetSummary,
+              budgetActivityNote,
+            });
+            
+            continue; // Skip to next day
+          }
 
           // Determine how many activities to schedule for this day
           const targetActivitiesCount = Math.min(maxActivitiesPerDay, 
@@ -607,19 +739,7 @@ let remainingTripBudget = input.budget;
             const activity = pickActivity();
             if (!activity) break;
 
-            // Parse activity duration
-            const durationMinutes = parseDurationToMinutes(activity.duration);
-
-            // Calculate times
-            const startTimeMinutes = currentTimeMinutes;
-            const endTimeMinutes = startTimeMinutes + durationMinutes;
-
-            // Prevent scheduling past 23:00 (day end cutoff)
-            if (endTimeMinutes > dayEndTimeMinutes) break;
-
-            const startTime = minutesToTime(startTimeMinutes);
-            const endTime = minutesToTime(endTimeMinutes);
-            const period = derivePeriod(startTime);
+            // Check if activity cost exceeds remaining budget
             let estimatedCost = estimateCost(activity.cost, activity.budgetLevel);
 
             // Apply smart fallback if estimatedCost is 0
@@ -638,6 +758,29 @@ let remainingTripBudget = input.budget;
               estimatedCost = categoryFallback[category] || 40;
             }
 
+            // Budget constraint: skip if unaffordable
+            if (estimatedCost > remainingActivityBudget) {
+              unaffordableAttempts++;
+              if (unaffordableAttempts >= maxUnaffordableAttempts) {
+                break; // Stop trying to add activities for this day
+              }
+              continue; // Try next activity
+            }
+
+            // Parse activity duration
+            const durationMinutes = parseDurationToMinutes(activity.duration);
+
+            // Calculate times
+            const startTimeMinutes = currentTimeMinutes;
+            const endTimeMinutes = startTimeMinutes + durationMinutes;
+
+            // Prevent scheduling past 23:00 (day end cutoff)
+            if (endTimeMinutes > dayEndTimeMinutes) break;
+
+            const startTime = minutesToTime(startTimeMinutes);
+            const endTime = minutesToTime(endTimeMinutes);
+            const period = derivePeriod(startTime);
+
 // =======================
 // 1) إضافة الأنشطة الأساسية
 // =======================
@@ -655,13 +798,19 @@ dayActivities.push({
   estimatedCost,
 });
 
+// Deduct cost from remaining budget
+remainingActivityBudget = Math.max(remainingActivityBudget - estimatedCost, 0);
 currentTimeMinutes = endTimeMinutes + travelBufferMinutes;
 activitiesCount++;
+unaffordableAttempts = 0; // Reset counter after successful addition
 }
 
 // =======================
 // 2) ضمان الحد الأدنى من الأنشطة
 // =======================
+let minActivitiesAttempts = 0;
+const maxMinActivitiesAttempts = 10;
+
 while (
   dayActivities.length < minActivitiesPerDay &&
   usedActivityIds.size < filteredActivities.length
@@ -696,6 +845,15 @@ while (
     estimatedCost = categoryFallback[category] || 40;
   }
 
+  // Budget constraint: skip if unaffordable
+  if (estimatedCost > remainingActivityBudget) {
+    minActivitiesAttempts++;
+    if (minActivitiesAttempts >= maxMinActivitiesAttempts) {
+      break; // Stop trying to meet minimum
+    }
+    continue; // Try next activity
+  }
+
   dayActivities.push({
     startTime,
     endTime,
@@ -710,7 +868,10 @@ while (
     estimatedCost,
   });
 
+  // Deduct cost from remaining budget
+  remainingActivityBudget = Math.max(remainingActivityBudget - estimatedCost, 0);
   currentTimeMinutes = endTimeMinutes + travelBufferMinutes;
+  minActivitiesAttempts = 0; // Reset counter after successful addition
 }
 
 // =======================
@@ -743,6 +904,7 @@ plan.push({
   dayBudgetSummary: {
     dailyBudget,
     accommodationCostPerNight,
+    remainingAfterAccommodation,
     activitiesCost: dayTotalCost,
     remainingAfterActivities,
   },
@@ -772,19 +934,20 @@ plan.push({
           budgetNote = 'ميزانيتك اليومية تذهب للسكن تقريبًا، تم تفضيل الأنشطة المجانية والخيارات الاقتصادية.';
         }
         
-        // Add budget summary to each day in plan
-        const planWithBudgetSummary = plan.map(day => ({
-          ...day,
-          dayBudgetSummary: {
-            dailyBudget,
-            accommodationCostPerNight,
-            remainingAfterAccommodation,
-          },
-        }));
-
-        // Calculate trip total cost and remaining budget
-        const tripTotalCost = planWithBudgetSummary.reduce((sum, day) => sum + (day.dayTotalCost || 0), 0);
-        const remainingBudget = input.budget - tripTotalCost;
+        // Calculate trip-level accommodation cost
+        const accommodationTotalCost = (accommodationCostPerNight || 0) * input.days;
+        
+        // Calculate trip-level activities cost
+        const activitiesTotalCost = plan.reduce((sum, day) => sum + (day.dayTotalCost || 0), 0);
+        
+        // Calculate total trip cost including accommodation and activities
+        const tripTotalCost = accommodationTotalCost + activitiesTotalCost;
+        
+        // Calculate remaining budget after all expenses
+        const remainingBudget = Math.max(input.budget - tripTotalCost, 0);
+        
+        // Keep plan as-is (dayBudgetSummary already set in the day loop)
+        const planWithBudgetSummary = plan;
 
         // Create trip record
         const tripData = {
