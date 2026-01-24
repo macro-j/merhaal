@@ -2,7 +2,11 @@
 
 ## Project Overview
 
-**Merhaal** is a tourism planning platform for the Middle East (initially Saudi Arabia). It enables users to plan trips, explore destinations, activities, and accommodations with multi-language support (Arabic/English) and a tier-based pricing model (free/smart/professional).
+**Merhaal** is a tourism planning platform for the Middle East (initially Saudi Arabia).  
+It is a **daily trip planning engine**, not just a list of places.
+
+The goal is to generate **logical, realistic, time-aware, and budget-aware itineraries**
+based on user inputs such as city, days, budget, accommodation level, and interests.
 
 **Architecture**: Full-stack TypeScript monorepo with:
 - **Client**: React 19 + Vite + Tailwind + Shadcn UI + Wouter (routing)
@@ -10,9 +14,11 @@
 - **Database**: PostgreSQL with Drizzle migrations
 - **Shared**: Common types via `shared/` directory
 
+---
+
 ## Tech Stack & Critical Commands
 
-**Build & Run**:
+### Build & Run
 ```bash
 pnpm dev          # Start dev server (client + server with tsx watch)
 pnpm build        # Build client (Vite) + server (esbuild) → dist/
@@ -21,102 +27,253 @@ pnpm check        # TypeScript validation (no emit)
 pnpm test         # Vitest (jsdom environment)
 pnpm format       # Prettier formatting
 pnpm db:push      # Drizzle migrations (requires DATABASE_URL)
-```
+Core Dependencies
+Express
 
-**Dependencies**: Express, tRPC, React Query (TanStack), Drizzle ORM, Shadcn UI (via components.json), Tailwind 4, Zod validation, JWT auth (jsonwebtoken), AWS S3 (storage).
+tRPC
 
-## Architecture Patterns
+React Query (TanStack)
 
-### Data Flow: Client → Server → DB
-1. **Client**: React components use `trpc` hooks (from `client/src/lib/trpc.ts`) to call server procedures
-2. **Server**: tRPC routers (`server/routers.ts`) validate inputs with Zod, execute business logic
-3. **Database**: Drizzle ORM (`server/db.ts`) executes queries; schema defined in `drizzle/schema.ts`
+Drizzle ORM
 
-### tRPC Procedures (server/routers.ts)
-Three procedure types with middleware-based auth:
-- `publicProcedure`: No auth required
-- `protectedProcedure`: Requires `ctx.user` (via `requireUser` middleware)
-- `adminProcedure`: Requires `ctx.user.role === 'admin'`
+Shadcn UI (via components.json)
 
-**Auth Context** (`server/_core/context.ts`): Extracts user from JWT Bearer token or session cookie; resolves to `TrpcContext` with `user: User | null`.
+Tailwind CSS
 
-### Database Schema (drizzle/schema.ts)
+Zod
+
+JWT (jsonwebtoken)
+
+AWS S3 (storage)
+
+Architecture Patterns
+Data Flow: Client → Server → DB
+Client: React components call tRPC hooks (client/src/lib/trpc.ts)
+
+Server: server/routers.ts validates input (Zod) and executes planning logic
+
+Database: Drizzle ORM (server/db.ts) with schema in drizzle/schema.ts
+
+tRPC Procedures
+publicProcedure: no auth required
+
+protectedProcedure: authenticated user required
+
+Admin access is enforced via protectedProcedure + explicit role checks
+(user.role === 'admin') inside admin routers
+
+Database Schema Overview
 Key tables:
-- `users`: id, email, password, role (user/admin), tier (free/smart/professional)
-- `destinations`: Tourism sites (Riyadh, Jeddah, AlUla, Abha) with AR/EN names
-- `activities`: Things to do (restaurants, heritage, nature, shopping, etc.)
-- `accommodations`: Lodging options with price ranges
-- `trips`: User-created trip plans
-- `items`: Trip contents (destinations, activities, accommodations)
 
-Enums use Arabic strings (e.g., `accommodationType: "فاخر" | "متوسط" | "اقتصادي"`).
+users: id, email, password, role (user/admin), tier (free/smart/professional)
 
-### Shared Code
-`shared/types.ts` re-exports schema types; `shared/const.ts` has error messages (`UNAUTHED_ERR_MSG`, `NOT_ADMIN_ERR_MSG`). Path aliases: `@/*` → `client/src/`, `@shared/*` → `shared/`.
+destinations: cities with AR/EN content
 
-## Client-Side Patterns
+activities: attractions, restaurants, experiences
 
-### Routing (Wouter)
-`client/src/App.tsx` defines routes with `<Route>` components. Pages live in `client/src/pages/` (Home, Login, Dashboard, etc.). Admin routes protected in page components.
+accommodations: hotels with class & price range
 
-### Context Providers (client/src/contexts/)
-- **LanguageContext**: `useLanguage()` hook for ar/en switching; updates `localStorage` and DOM `dir/lang` attributes
-- **ThemeContext**: Dark/light mode management
+trips: generated user plans
 
-Wrap entire app in providers at root for consistent state.
+items: trip contents
 
-### UI Components
-Use **Shadcn UI** (Radix-based) from `client/src/components/ui/`. Reference `components.json` for config. Examples: Button, Dialog, Card, Form, Input, Select. All styled with Tailwind classes.
+Bilingual convention:
 
-### tRPC Client Usage
-```typescript
-const { data: destinations } = trpc.destinations.list.useQuery();
-const createTrip = trpc.trips.create.useMutation();
-```
+nameAr, nameEn
 
-Queries auto-cache via React Query; mutations invalidate related queries automatically in optimized routers.
+descriptionAr, descriptionEn
 
-## Testing
+Enums often use Arabic strings.
 
-**Vitest** runs in jsdom environment. Example patterns:
-- **Server tests** (`server/routers.test.ts`): Create mock `TrpcContext` with optional user, call procedures via `appRouter.createCaller(ctx)`
-- **Client tests** (`client/src/pages/Home.test.tsx`): Render with tRPC Provider + QueryClientProvider + LanguageProvider/ThemeProvider wrappers
+Client-Side Patterns
+Routing
+Wouter routing in client/src/App.tsx
 
-## Project-Specific Conventions
+Pages live in client/src/pages/
 
-### Bilingual Content
-- Database fields: `nameAr`, `nameEn`, `titleAr`, `titleEn`, `descriptionAr`, `descriptionEn`
-- UI: Check `language` context; conditionally render/fetch based on locale
-- Direction: Arabic (ar) = RTL; English (en) = LTR
+Context Providers
+LanguageContext (ar/en, RTL/LTR)
 
-### Error Handling
-Use shared error messages from `shared/const.ts`. Server throws `TRPCError` with codes: `UNAUTHORIZED`, `FORBIDDEN`, `CONFLICT`, etc. Client shows toast via Sonner (`@/components/ui/sonner`).
+ThemeContext (dark/light)
 
-### File Organization
-- `client/src/_core/`: Internal hooks, utility functions
-- `server/_core/`: tRPC setup (context, middleware), auth, external service integrations (LLM, maps, images)
-- `server/`: Database logic, routers
-- `drizzle/`: Schema, migrations
+UI Components
+Shadcn UI components from client/src/components/ui
 
-### Environment Variables
-PostgreSQL: `DATABASE_URL` (required for db:push). OAuth: `VITE_OAUTH_PORTAL_URL`, `VITE_APP_ID` (client-side). JWT: `JWT_SECRET` (server). See `.env` or deployment docs.
+Tailwind-based styling
 
-## Key Integration Points
+Do not change layout or theme unless explicitly requested
 
-- **AWS S3**: Presigned URLs via `@aws-sdk/*` (storage.ts)
-- **OpenAI**: LLM integration (`server/_core/llm.ts`)
-- **Google Maps**: Geocoding/routing (`server/_core/map.ts`)
-- **Voice Transcription**: Speech-to-text (`server/_core/voiceTranscription.ts`)
-- **PDF Export**: jsPDF library (pdfExport.ts)
+================================
+RULES FOR AI / COPILOT CHANGES
+================================
+🔴 SAFETY RULES (MUST FOLLOW)
+Make small, isolated changes only
 
-## Debugging & Common Tasks
+One feature per change
 
-- **Type errors**: Run `pnpm check`
-- **Lint issues**: Prettier (`pnpm format`)
-- **DB issues**: Verify `DATABASE_URL` set; check migrations in `drizzle/` folder
-- **Auth failures**: Check JWT expiry (7 days default); validate cookie/Bearer token in request
-- **Build errors**: Clear `dist/` and rebuild; check Vite aliases in `vite.config.ts`
+Never refactor unrelated code
 
----
+Never rewrite large sections unless explicitly asked
 
-For implementation questions on specific features, trace: page component → tRPC hook → router procedure → db function → schema.
+Always preserve existing behavior unless requested otherwise
+
+🔴 WORKFLOW RULES
+Every change must be testable locally (pnpm dev)
+
+Prefer adding fields instead of renaming/removing existing ones
+
+Keep commits small and reversible
+
+Assume the project owner is not a programmer
+
+🔴 FILE SCOPE RULES
+UI changes → client/
+
+Trip planning logic → server/routers.ts → trips.create
+
+Shared logic/types → shared/
+
+DO NOT TOUCH:
+
+drizzle/ schema or migrations
+
+database structure
+unless explicitly requested
+
+🔴 AUTH & SECURITY
+Never rely on UI-only permission checks
+
+Enforce tier and role rules on the server
+
+Never expose API keys to the client
+
+AI integrations must run server-side only
+
+================================
+TRIP PLANNING PRODUCT RULES
+================================
+The system is a planning engine, not a static generator.
+
+1️⃣ Scheduling (HIGH PRIORITY)
+No fixed time slots (e.g. 09:00, 12:00, 18:00)
+
+Times must be computed dynamically using:
+
+activity duration
+
+travel buffer
+
+Days may end at different times (e.g. 7pm, 9pm)
+
+No overlapping activities
+
+Each item must have:
+
+startTime
+
+endTime
+
+period (morning / afternoon / evening) derived from time
+
+2️⃣ Duration & Travel
+Activity duration must be respected
+
+If duration missing, use a reasonable default
+
+Add travel buffer between activities (default 30 minutes)
+
+3️⃣ Budget Logic
+Each activity/accommodation should have an estimated cost
+
+Calculate:
+
+daily total cost
+
+trip total cost
+
+Total should be ≤ user budget (or show a clear warning)
+
+Accommodation should consume the largest budget portion if luxury selected
+
+4️⃣ Meals
+Include:
+
+breakfast
+
+lunch
+
+dinner
+
+Meals should use restaurant activities when available
+
+5️⃣ Maps
+Each activity/accommodation should include:
+
+Google Maps link if available
+
+fallback Google search link if not
+
+================================
+TIER / PRICING RULES
+================================
+Free
+1 trip
+
+Short duration
+
+Basic planning
+
+No PDF export
+
+No sharing
+
+Smart
+Multiple trips
+
+Budget & interest customization
+
+Save and regenerate plans
+
+Share via link
+
+Professional
+Advanced time-aware planning
+
+Unique/non-touristy places
+
+Unlimited saved plans
+
+PDF export
+
+Priority access to new features
+
+Tier rules must be enforced:
+
+On the server (hard rules)
+
+Reflected in the UI (disabled buttons + upgrade prompts)
+
+Environment Variables
+DATABASE_URL (required)
+
+JWT_SECRET
+
+OAuth vars (client-side)
+
+AI keys must be server-side only
+
+Debugging & Common Tasks
+Type errors: pnpm check
+
+Formatting: pnpm format
+
+DB issues: verify DATABASE_URL
+
+Auth issues: verify JWT token & expiry
+
+Build issues: clear dist/ and rebuild
+
+HOW TO TRACE FEATURES
+Page → tRPC hook → router procedure → DB function → schema
+
+Always follow this path when modifying or debugging features.
