@@ -279,6 +279,12 @@ export default function TripDetails() {
                      plan.accommodation.class === 'mid' ? 'متوسط' : 'اقتصادي'}
                     {plan.accommodation.priceRange && ` • ${plan.accommodation.priceRange}`}
                   </p>
+                  {plan?.accommodationSelectionNote && (
+  <p className="mt-1 text-sm text-muted-foreground">
+    {plan.accommodationSelectionNote}
+  </p>
+)}
+
                 </div>
                 <a
                   href={plan.accommodation.googleMapsUrl || getGoogleMapsUrl(plan.accommodation.name, plan.destination)}
@@ -332,13 +338,28 @@ export default function TripDetails() {
                         key={actIdx} 
                         className="flex flex-col sm:flex-row gap-4 p-4 rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors"
                       >
-                        <div className="flex items-center gap-3 text-primary font-medium min-w-[100px]">
-                          <Clock className="w-4 h-4" />
-                          <div className="text-sm">
-                            <div>{activity.period}</div>
-                            <div className="text-muted-foreground">{activity.time}</div>
-                          </div>
-                        </div>
+                       <div className="flex items-center gap-3 text-primary font-medium min-w-[120px]">
+  <Clock className="w-4 h-4" />
+  <div className="text-sm space-y-0.5">
+    {activity.startTime && activity.endTime ? (
+      <>
+        <div className="font-medium">
+          {activity.startTime} – {activity.endTime}
+        </div>
+        {activity.period && (
+          <div className="text-muted-foreground">
+            {activity.period}
+          </div>
+        )}
+      </>
+    ) : (
+      <>
+        <div>{activity.period}</div>
+        <div className="text-muted-foreground">{activity.time}</div>
+      </>
+    )}
+  </div>
+</div>
                         
                         <div className="flex-1">
                           <h4 className="font-semibold mb-1">
