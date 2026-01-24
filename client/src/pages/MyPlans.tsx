@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { trpc } from "@/lib/trpc";
-import { Calendar, MapPin, Plus, ChevronDown, Trash2, Clock, FileDown, Loader2 } from "lucide-react";
+import { Calendar, MapPin, Plus, ChevronDown, Trash2, Clock, FileDown, Loader2, Eye } from "lucide-react";
 import { useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -219,6 +219,18 @@ export default function MyPlans() {
                           </div>
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setLocation(`/trip/${trip.id}`);
+                            }}
+                            title={language === 'ar' ? 'عرض الخطة الكاملة' : 'View full plan'}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
                           {isProfessional && (
                             <Button
                               variant="ghost"
