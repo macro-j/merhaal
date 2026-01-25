@@ -134,33 +134,40 @@ export default function PlanTrip() {
                   <Loader2 className="w-6 h-6 animate-spin mx-auto" />
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {destinations?.map((dest) => (
-                    <div
-                      key={dest.id}
-                      onClick={() => setSelectedDestination(dest.id)}
-                      className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
-                        selectedDestination === dest.id
-                          ? 'border-purple-600 shadow-lg'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-purple-400'
-                      }`}
-                    >
-                      <div className="aspect-video relative">
-                        <img
-                          src={getImageSrc(dest)}
-                          alt={dest.nameAr}
-                          className="w-full h-full object-cover bg-gradient-to-br from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700"
-                          onError={() => handleImageError(dest.id)}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                        <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                          <h3 className="text-lg font-bold">{dest.nameAr}</h3>
-                          <p className="text-sm text-gray-200">{dest.titleAr}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  {destinations?.map((dest) => (
+    <div
+      key={dest.id}
+      onClick={() => setSelectedDestination(dest.id)}
+      className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
+        selectedDestination === dest.id
+          ? "border-purple-600 shadow-lg"
+          : "border-gray-200 dark:border-gray-700 hover:border-purple-400"
+      }`}
+    >
+      <div className="aspect-video relative">
+        <img
+          src={
+            destinationImages[dest.slug] ||
+            destinationImages[dest.slug?.replace(/-/g, "")] ||
+            destinationImages[dest.slug?.replace(/-/g, "_")] ||
+            "/images/cities/riyadh-hero.jpg"
+          }
+          alt={dest.nameAr}
+          className="w-full h-full object-cover"
+          loading="lazy"
+        />
+
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+
+        <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+          <h3 className="text-lg font-bold">{dest.nameAr}</h3>
+          <p className="text-sm text-gray-200">{dest.titleAr}</p>
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
               )}
             </CardContent>
           </Card>

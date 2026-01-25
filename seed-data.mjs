@@ -16,7 +16,7 @@ async function seed() {
       titleEn: 'Riyadh - The Vibrant Heart of the Kingdom',
       descriptionAr: 'عاصمة تجمع بين التراث العريق والحداثة المتقدمة. اكتشف أسواقها العريقة وتراثها الثقافي الغني وناطحات سحابها الشاهقة.',
       descriptionEn: 'A capital that blends rich heritage with modern advancement. Discover its ancient markets, cultural treasures, and towering skyscrapers.',
-      images: ['/images/riyadh.jpg']
+images: ['/images/cities/riyadh-hero.jpg']
     },
     {
       nameAr: 'جدة',
@@ -25,7 +25,7 @@ async function seed() {
       titleEn: 'Jeddah - Bride of the Red Sea',
       descriptionAr: 'مدينة ساحلية بموروث عريق وطبيعة خلابة. استمتع بكورنيشها الساحر وثقافتها الإسلامية العميقة وشواطئها الرملية الذهبية.',
       descriptionEn: 'A coastal city with deep heritage and breathtaking nature. Enjoy its enchanting corniche, Islamic culture, and golden sandy beaches.',
-      images: ['/images/jeddah.jpg']
+images: ['/images/cities/jeddah-hero.jpg']
     },
     {
       nameAr: 'العلا',
@@ -34,7 +34,7 @@ async function seed() {
       titleEn: 'AlUla - A Living Museum in the Desert',
       descriptionAr: 'موقع يونسكو للتراث العالمي مع آثار عريقة وطبيعة خلابة. استكشف مدائن صالح والتكوينات الجيولوجية المذهلة.',
       descriptionEn: 'A UNESCO World Heritage site with ancient monuments and stunning nature. Explore Madain Saleh and geological wonders.',
-      images: ['/images/alula.jpg']
+images: ['/images/cities/alula-hero.jpg']
     },
     {
       nameAr: 'أبها',
@@ -43,8 +43,18 @@ async function seed() {
       titleEn: 'Abha - Bride of the South',
       descriptionAr: 'جبال خضراء وطبيعة ساحرة في منطقة عسير. استمتع بالمناخ المعتدل والمناظر الطبيعية الخلابة.',
       descriptionEn: 'Green mountains and charming nature in Asir region. Enjoy the moderate climate and stunning landscapes.',
-      images: ['/images/abha.jpg']
+images: ['/images/cities/abha-hero.jpg']
     }
+    {
+  nameAr: 'الطائف',
+  nameEn: 'Taif',
+  titleAr: 'الطائف - مدينة الورد',
+  titleEn: 'Taif - City of Roses',
+  descriptionAr: 'مدينة جبلية بأجواء لطيفة وطبيعة جميلة. استمتع بالمرتفعات والحدائق والأسواق الشعبية.',
+  descriptionEn: 'A mountain city with pleasant weather and beautiful nature. Enjoy highlands, gardens, and local markets.',
+  images: ['/images/cities/taif-hero.jpg'],
+}
+
   ];
 
   const insertedDestinations = await db.insert(schema.destinations).values(destinationsData).$returningId();

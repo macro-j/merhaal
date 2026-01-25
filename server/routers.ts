@@ -654,6 +654,12 @@ export const appRouter = router({
         const dayStartTime = 9 * 60; // 09:00 in minutes since midnight
         const dayEndTimeMinutes = 23 * 60; // 23:00 (11 PM) - prevent scheduling past this time
 let remainingTripBudget = input.budget;
+        
+        // Balanced activity distribution across days
+        const totalActivitiesCount = filteredActivities.length;
+        const baseActivitiesPerDay = Math.floor(totalActivitiesCount / input.days);
+        let extraActivitiesDays = totalActivitiesCount % input.days;
+        
         for (let day = 1; day <= input.days; day++) {
           const dayActivities = [];
           let currentTimeMinutes = dayStartTime;
@@ -732,8 +738,12 @@ let remainingTripBudget = input.budget;
           }
 
           // Determine how many activities to schedule for this day
-          const targetActivitiesCount = Math.min(maxActivitiesPerDay, 
-            Math.ceil(filteredActivities.length / input.days) + 1);
+          let targetActivitiesCount = baseActivitiesPerDay;
+          if (extraActivitiesDays > 0) {
+            targetActivitiesCount += 1;
+            extraActivitiesDays--;
+          }
+          targetActivitiesCount = Math.min(maxActivitiesPerDay, targetActivitiesCount);
 
           while (activitiesCount < targetActivitiesCount && usedActivityIds.size < filteredActivities.length) {
             const activity = pickActivity();
