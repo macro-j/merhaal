@@ -6,11 +6,12 @@ import { Calendar, Settings, Sparkles, Globe, Users, Share2, ChevronLeft, Chevro
 import { Navbar } from "@/components/Navbar";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { DESTINATIONS_CATALOG, type DestinationCatalogItem } from "@/constants/destinationsCatalog";
 
 export default function Home() {
   let { isAuthenticated } = useAuth();
   const { language, isRTL } = useLanguage();
-  const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  const [selectedDestination, setSelectedDestination] = useState<DestinationCatalogItem | null>(null);
   
   const { ref: destinationsRef, isInView: destinationsInView } = useInView();
   const { ref: featuresRef, isInView: featuresInView } = useInView();
@@ -121,58 +122,7 @@ export default function Home() {
     carouselRef.current.scrollTo({ left: newScroll, behavior: 'smooth' });
   }, []);
 
-  const destinations = [
-    {
-      id: 'الرياض',
-      name: 'الرياض',
-      nameEn: 'Riyadh',
-      subtitle: 'قلب المملكة النابض',
-      subtitleEn: 'The Beating Heart of the Kingdom',
-      description: 'عاصمة تجمع بين التراث والحداثة مع أسواق عريقة ومتاحف وواجهات حديثة',
-      descriptionEn: 'A capital that combines heritage and modernity with traditional markets, museums and modern facades',
-      image: '/images/cities/riyadh-hero.jpg'
-    },
-    {
-      id: 'جدة',
-      name: 'جدة',
-      nameEn: 'Jeddah',
-      subtitle: 'عروس البحر الأحمر',
-      subtitleEn: 'Bride of the Red Sea',
-      description: 'مدينة ساحلية بموروث عريق مع كورنيش ساحر وتراث إسلامي',
-      descriptionEn: 'A coastal city with rich heritage, charming corniche and Islamic heritage',
-      image: '/images/cities/jeddah-hero.jpg'
-    },
-    {
-      id: 'الطائف',
-      name: 'الطائف',
-      nameEn: 'Taif',
-      subtitle: 'مدينة الورد',
-      subtitleEn: 'City of Roses',
-      description: 'مصيف الجزيرة العربية بجبالها الخضراء وأجوائها المعتدلة وحدائق الورد',
-      descriptionEn: 'Summer resort of Arabia with green mountains, mild weather and rose gardens',
-      image: '/images/cities/taif-hero.jpg'
-    },
-    {
-      id: 'أبها',
-      name: 'أبها',
-      nameEn: 'Abha',
-      subtitle: 'عروس الجنوب',
-      subtitleEn: 'Bride of the South',
-      description: 'جبال خضراء وطبيعة ساحرة في منطقة عسير',
-      descriptionEn: 'Green mountains and charming nature in Asir region',
-      image: '/images/cities/abha-hero.jpg'
-    },
-    {
-      id: 'العلا',
-      name: 'العلا',
-      nameEn: 'AlUla',
-      subtitle: 'متحف حي في الصحراء',
-      subtitleEn: 'A Living Museum in the Desert',
-      description: 'موقع يونسكو مع طبيعة خلابة وآثار عريقة ومناظر صحراوية ساحرة',
-      descriptionEn: 'UNESCO site with stunning nature, ancient ruins and charming desert landscapes',
-      image: '/images/cities/alula-hero.png'
-    }
-  ];
+  const destinations = DESTINATIONS_CATALOG;
 
   const features = [
     {
@@ -322,7 +272,7 @@ export default function Home() {
               {destinations.map((dest, index) => (
                 <button 
                   key={index}
-                  onClick={() => setSelectedCity(dest.id)}
+                  onClick={() => setSelectedDestination(dest)}
                   className="group relative flex-shrink-0 w-[92vw] md:w-[320px] lg:w-[340px] snap-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-2xl card-hover"
                 >
                   <div className="aspect-[4/5] relative overflow-hidden rounded-2xl">
@@ -444,9 +394,9 @@ export default function Home() {
       </footer>
 
       <CityDetailModal
-        cityId={selectedCity}
-        isOpen={!!selectedCity}
-        onClose={() => setSelectedCity(null)}
+        destination={selectedDestination}
+        isOpen={!!selectedDestination}
+        onClose={() => setSelectedDestination(null)}
         language={language}
       />
     </div>
