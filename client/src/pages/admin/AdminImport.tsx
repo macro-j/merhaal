@@ -45,15 +45,6 @@ const initialDatasetState: DatasetState = {
   isProcessing: false,
 };
 
-const CITIES_REQUIRED_HEADERS = ['city_id', 'name_ar', 'name_en'];
-const CITIES_OPTIONAL_HEADERS = ['description_ar', 'description_en', 'image_url', 'is_active'];
-
-const ACTIVITIES_REQUIRED_HEADERS = ['activity_id', 'city_id', 'name_ar', 'category'];
-const ACTIVITIES_OPTIONAL_HEADERS = ['name_en', 'description_ar', 'tags', 'budget_level', 'best_time', 'duration_min', 'is_indoor', 'is_unique', 'google_maps_url', 'tier_required', 'is_active'];
-
-const ACCOMMODATIONS_REQUIRED_HEADERS = ['accommodation_id', 'city_id', 'name_ar', 'class'];
-const ACCOMMODATIONS_OPTIONAL_HEADERS = ['name_en', 'price_range', 'description_ar', 'google_maps_url', 'tier_required', 'is_active'];
-
 const SHEET_NAMES = {
   cities: 'Cities',
   activities: 'Activities',
@@ -122,9 +113,6 @@ export default function AdminImport() {
     sheet: XLSX.WorkSheet,
     datasetType: 'cities' | 'activities' | 'accommodations'
   ): DatasetState => {
-    const requiredHeaders = datasetType === 'cities' ? CITIES_REQUIRED_HEADERS : 
-                           datasetType === 'activities' ? ACTIVITIES_REQUIRED_HEADERS : ACCOMMODATIONS_REQUIRED_HEADERS;
-
     const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: '' });
     
     if (jsonData.length === 0) {
@@ -138,84 +126,8 @@ export default function AdminImport() {
     const headers = Object.keys(jsonData[0] as object);
     const errors: ValidationError[] = [];
 
-    const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
-    if (missingHeaders.length > 0) {
-      errors.push({
-        row: 0,
-        column: missingHeaders.join(', '),
-        reason: `أعمدة مطلوبة مفقودة: ${missingHeaders.join(', ')}`,
-      });
-    }
-
-    const seenIds = new Set<string>();
-
-    jsonData.forEach((row: any, index: number) => {
-      const rowNum = index + 2;
-
-      if (datasetType === 'cities') {
-        if (!row.city_id || String(row.city_id).trim() === '') {
-          errors.push({ row: rowNum, column: 'city_id', reason: 'معرف المدينة مطلوب' });
-        } else if (seenIds.has(String(row.city_id))) {
-          errors.push({ row: rowNum, column: 'city_id', reason: 'معرف مكرر' });
-        } else {
-          seenIds.add(String(row.city_id));
-        }
-        if (!row.name_ar || String(row.name_ar).trim() === '') {
-          errors.push({ row: rowNum, column: 'name_ar', reason: 'اسم المدينة بالعربية مطلوب' });
-        }
-      }
-
-      if (datasetType === 'activities') {
-        if (!row.activity_id || String(row.activity_id).trim() === '') {
-          errors.push({ row: rowNum, column: 'activity_id', reason: 'معرف النشاط مطلوب' });
-        } else if (seenIds.has(String(row.activity_id))) {
-          errors.push({ row: rowNum, column: 'activity_id', reason: 'معرف مكرر' });
-        } else {
-          seenIds.add(String(row.activity_id));
-        }
-        if (!row.name_ar || String(row.name_ar).trim() === '') {
-          errors.push({ row: rowNum, column: 'name_ar', reason: 'اسم النشاط بالعربية مطلوب' });
-        }
-        if (!row.city_id) {
-          errors.push({ row: rowNum, column: 'city_id', reason: 'معرف المدينة مطلوب' });
-        }
-        if (!row.category || String(row.category).trim() === '') {
-          errors.push({ row: rowNum, column: 'category', reason: 'فئة النشاط مطلوبة' });
-        }
-        if (row.tier_required && !VALID_TIERS.includes(String(row.tier_required).toLowerCase())) {
-          errors.push({ row: rowNum, column: 'tier_required', reason: `قيمة غير صالحة: ${row.tier_required}` });
-        }
-        if (row.budget_level && !VALID_BUDGET_LEVELS.includes(String(row.budget_level).toLowerCase())) {
-          errors.push({ row: rowNum, column: 'budget_level', reason: `قيمة غير صالحة: ${row.budget_level}` });
-        }
-        if (row.best_time && !VALID_BEST_TIMES.includes(String(row.best_time).toLowerCase())) {
-          errors.push({ row: rowNum, column: 'best_time', reason: `قيمة غير صالحة: ${row.best_time}` });
-        }
-      }
-
-      if (datasetType === 'accommodations') {
-        if (!row.accommodation_id || String(row.accommodation_id).trim() === '') {
-          errors.push({ row: rowNum, column: 'accommodation_id', reason: 'معرف الإقامة مطلوب' });
-        } else if (seenIds.has(String(row.accommodation_id))) {
-          errors.push({ row: rowNum, column: 'accommodation_id', reason: 'معرف مكرر' });
-        } else {
-          seenIds.add(String(row.accommodation_id));
-        }
-        if (!row.name_ar || String(row.name_ar).trim() === '') {
-          errors.push({ row: rowNum, column: 'name_ar', reason: 'اسم الإقامة بالعربية مطلوب' });
-        }
-        if (!row.city_id) {
-          errors.push({ row: rowNum, column: 'city_id', reason: 'معرف المدينة مطلوب' });
-        }
-        if (row.class && !VALID_ACC_CLASSES.includes(String(row.class).toLowerCase())) {
-          errors.push({ row: rowNum, column: 'class', reason: `قيمة غير صالحة: ${row.class}` });
-        }
-        if (row.tier_required && !VALID_TIERS.includes(String(row.tier_required).toLowerCase())) {
-          errors.push({ row: rowNum, column: 'tier_required', reason: `قيمة غير صالحة: ${row.tier_required}` });
-        }
-      }
-    });
-
+    // Basic structural validation only (row count, etc.)
+    // Column/field validation delegated to server for flexible schema support
     const normalizedData = jsonData.map((row: any) => {
       const normalized: any = { ...row };
       if ('is_active' in normalized) {
@@ -236,6 +148,12 @@ export default function AdminImport() {
       if ('best_time' in normalized && normalized.best_time) {
         normalized.best_time = String(normalized.best_time).toLowerCase();
       }
+      if ('best_time_of_day' in normalized && normalized.best_time_of_day) {
+        normalized.best_time_of_day = String(normalized.best_time_of_day).toLowerCase();
+      }
+      if ('bestTimeOfDay' in normalized && normalized.bestTimeOfDay) {
+        normalized.bestTimeOfDay = String(normalized.bestTimeOfDay).toLowerCase();
+      }
       if ('class' in normalized && normalized.class) {
         normalized.class = String(normalized.class).toLowerCase();
       }
@@ -245,14 +163,14 @@ export default function AdminImport() {
       if ('city_id' in normalized) {
         normalized.city_id = String(normalized.city_id).trim();
       }
+      if ('destinationId' in normalized) {
+        normalized.destinationId = String(normalized.destinationId).trim();
+      }
       if ('activity_id' in normalized) {
         normalized.activity_id = String(normalized.activity_id).trim();
       }
       if ('accommodation_id' in normalized) {
         normalized.accommodation_id = String(normalized.accommodation_id).trim();
-      }
-      if ('duration_min' in normalized && normalized.duration_min) {
-        normalized.duration_min = parseInt(String(normalized.duration_min), 10);
       }
       return normalized;
     });
@@ -261,7 +179,7 @@ export default function AdminImport() {
       file: null,
       fileName: '',
       sheetNames: [],
-      selectedSheet: '',
+      selectedSheet: datasetType,
       data: normalizedData,
       headers,
       errors,
@@ -375,8 +293,8 @@ export default function AdminImport() {
       const sheetNames = workbook.SheetNames;
       
       const expectedSheet = SHEET_NAMES[datasetType];
-      const defaultSheet = sheetNames.find(s => s === expectedSheet) ||
-                          sheetNames.find(s => s.toLowerCase() === expectedSheet.toLowerCase()) ||
+      const defaultSheet = sheetNames.find((s: string) => s === expectedSheet) ||
+                          sheetNames.find((s: string) => s.toLowerCase() === expectedSheet.toLowerCase()) ||
                           sheetNames[0];
 
       setter(prev => ({
@@ -399,8 +317,6 @@ export default function AdminImport() {
 
   const processSheet = (workbook: XLSX.WorkBook, sheetName: string, datasetType: 'cities' | 'activities' | 'accommodations') => {
     const setter = datasetType === 'cities' ? setCities : datasetType === 'activities' ? setActivities : setAccommodations;
-    const requiredHeaders = datasetType === 'cities' ? CITIES_REQUIRED_HEADERS : 
-                           datasetType === 'activities' ? ACTIVITIES_REQUIRED_HEADERS : ACCOMMODATIONS_REQUIRED_HEADERS;
 
     const sheet = workbook.Sheets[sheetName];
     const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: '' });
@@ -419,84 +335,7 @@ export default function AdminImport() {
     const headers = Object.keys(jsonData[0] as object);
     const errors: ValidationError[] = [];
 
-    const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
-    if (missingHeaders.length > 0) {
-      errors.push({
-        row: 0,
-        column: missingHeaders.join(', '),
-        reason: `أعمدة مطلوبة مفقودة: ${missingHeaders.join(', ')}`,
-      });
-    }
-
-    const seenIds = new Set<string>();
-
-    jsonData.forEach((row: any, index: number) => {
-      const rowNum = index + 2;
-
-      if (datasetType === 'cities') {
-        if (!row.city_id || String(row.city_id).trim() === '') {
-          errors.push({ row: rowNum, column: 'city_id', reason: 'معرف المدينة مطلوب' });
-        } else if (seenIds.has(String(row.city_id))) {
-          errors.push({ row: rowNum, column: 'city_id', reason: 'معرف مكرر' });
-        } else {
-          seenIds.add(String(row.city_id));
-        }
-        if (!row.name_ar || String(row.name_ar).trim() === '') {
-          errors.push({ row: rowNum, column: 'name_ar', reason: 'اسم المدينة بالعربية مطلوب' });
-        }
-      }
-
-      if (datasetType === 'activities') {
-        if (!row.activity_id || String(row.activity_id).trim() === '') {
-          errors.push({ row: rowNum, column: 'activity_id', reason: 'معرف النشاط مطلوب' });
-        } else if (seenIds.has(String(row.activity_id))) {
-          errors.push({ row: rowNum, column: 'activity_id', reason: 'معرف مكرر' });
-        } else {
-          seenIds.add(String(row.activity_id));
-        }
-        if (!row.name_ar || String(row.name_ar).trim() === '') {
-          errors.push({ row: rowNum, column: 'name_ar', reason: 'اسم النشاط بالعربية مطلوب' });
-        }
-        if (!row.city_id) {
-          errors.push({ row: rowNum, column: 'city_id', reason: 'معرف المدينة مطلوب' });
-        }
-        if (!row.category || String(row.category).trim() === '') {
-          errors.push({ row: rowNum, column: 'category', reason: 'فئة النشاط مطلوبة' });
-        }
-        if (row.tier_required && !VALID_TIERS.includes(String(row.tier_required).toLowerCase())) {
-          errors.push({ row: rowNum, column: 'tier_required', reason: `قيمة غير صالحة: ${row.tier_required}` });
-        }
-        if (row.budget_level && !VALID_BUDGET_LEVELS.includes(String(row.budget_level).toLowerCase())) {
-          errors.push({ row: rowNum, column: 'budget_level', reason: `قيمة غير صالحة: ${row.budget_level}` });
-        }
-        if (row.best_time && !VALID_BEST_TIMES.includes(String(row.best_time).toLowerCase())) {
-          errors.push({ row: rowNum, column: 'best_time', reason: `قيمة غير صالحة: ${row.best_time}` });
-        }
-      }
-
-      if (datasetType === 'accommodations') {
-        if (!row.accommodation_id || String(row.accommodation_id).trim() === '') {
-          errors.push({ row: rowNum, column: 'accommodation_id', reason: 'معرف الإقامة مطلوب' });
-        } else if (seenIds.has(String(row.accommodation_id))) {
-          errors.push({ row: rowNum, column: 'accommodation_id', reason: 'معرف مكرر' });
-        } else {
-          seenIds.add(String(row.accommodation_id));
-        }
-        if (!row.name_ar || String(row.name_ar).trim() === '') {
-          errors.push({ row: rowNum, column: 'name_ar', reason: 'اسم الإقامة بالعربية مطلوب' });
-        }
-        if (!row.city_id) {
-          errors.push({ row: rowNum, column: 'city_id', reason: 'معرف المدينة مطلوب' });
-        }
-        if (row.class && !VALID_ACC_CLASSES.includes(String(row.class).toLowerCase())) {
-          errors.push({ row: rowNum, column: 'class', reason: `قيمة غير صالحة: ${row.class}` });
-        }
-        if (row.tier_required && !VALID_TIERS.includes(String(row.tier_required).toLowerCase())) {
-          errors.push({ row: rowNum, column: 'tier_required', reason: `قيمة غير صالحة: ${row.tier_required}` });
-        }
-      }
-    });
-
+    // Basic structural validation only - detailed validation delegated to server
     const normalizedData = jsonData.map((row: any) => {
       const normalized: any = { ...row };
       if ('is_active' in normalized) {
@@ -511,11 +350,23 @@ export default function AdminImport() {
       if ('tier_required' in normalized && normalized.tier_required) {
         normalized.tier_required = String(normalized.tier_required).toLowerCase();
       }
+      if ('minTier' in normalized && normalized.minTier) {
+        normalized.minTier = String(normalized.minTier).toLowerCase();
+      }
       if ('budget_level' in normalized && normalized.budget_level) {
         normalized.budget_level = String(normalized.budget_level).toLowerCase();
       }
+      if ('budgetLevel' in normalized && normalized.budgetLevel) {
+        normalized.budgetLevel = String(normalized.budgetLevel).toLowerCase();
+      }
       if ('best_time' in normalized && normalized.best_time) {
         normalized.best_time = String(normalized.best_time).toLowerCase();
+      }
+      if ('best_time_of_day' in normalized && normalized.best_time_of_day) {
+        normalized.best_time_of_day = String(normalized.best_time_of_day).toLowerCase();
+      }
+      if ('bestTimeOfDay' in normalized && normalized.bestTimeOfDay) {
+        normalized.bestTimeOfDay = String(normalized.bestTimeOfDay).toLowerCase();
       }
       if ('class' in normalized && normalized.class) {
         normalized.class = String(normalized.class).toLowerCase();
@@ -526,14 +377,14 @@ export default function AdminImport() {
       if ('city_id' in normalized) {
         normalized.city_id = String(normalized.city_id).trim();
       }
+      if ('destinationId' in normalized) {
+        normalized.destinationId = String(normalized.destinationId).trim();
+      }
       if ('activity_id' in normalized) {
         normalized.activity_id = String(normalized.activity_id).trim();
       }
       if ('accommodation_id' in normalized) {
         normalized.accommodation_id = String(normalized.accommodation_id).trim();
-      }
-      if ('duration_min' in normalized && normalized.duration_min) {
-        normalized.duration_min = parseInt(String(normalized.duration_min), 10);
       }
       return normalized;
     });
@@ -544,7 +395,7 @@ export default function AdminImport() {
       headers,
       errors,
       isValid: errors.length === 0,
-      selectedSheet: sheetName,
+      isProcessing: false,
     }));
   };
 
@@ -597,9 +448,7 @@ export default function AdminImport() {
     icon: React.ReactNode,
     state: DatasetState,
     inputRef: React.RefObject<HTMLInputElement | null>,
-    datasetType: 'cities' | 'activities' | 'accommodations',
-    requiredHeaders: string[],
-    optionalHeaders: string[]
+    datasetType: 'cities' | 'activities' | 'accommodations'
   ) => (
     <Card>
       <CardHeader>
@@ -608,7 +457,7 @@ export default function AdminImport() {
           {title}
         </CardTitle>
         <CardDescription>
-          الأعمدة المطلوبة: {requiredHeaders.join(', ')}
+          اختر ملف Excel أو CSV للاستيراد
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -638,7 +487,7 @@ export default function AdminImport() {
         {state.sheetNames.length > 1 && (
           <div>
             <Label>اختر الورقة</Label>
-            <Select value={state.selectedSheet} onValueChange={(v) => handleSheetChange(v, datasetType)}>
+            <Select value={state.selectedSheet} onValueChange={(v: string) => handleSheetChange(v, datasetType)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -894,8 +743,8 @@ export default function AdminImport() {
                     <Building2 className="w-4 h-4" /> المدن (Cities)
                   </h4>
                   <div className="text-xs space-y-1">
-                    <p><strong>مطلوب:</strong> {CITIES_REQUIRED_HEADERS.join(', ')}</p>
-                    <p className="text-muted-foreground"><strong>اختياري:</strong> {CITIES_OPTIONAL_HEADERS.join(', ')}</p>
+                    <p><strong>مطلوب:</strong> nameAr (أو name_ar)</p>
+                    <p className="text-muted-foreground"><strong>اختياري:</strong> nameEn, image, region, isActive</p>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -903,8 +752,8 @@ export default function AdminImport() {
                     <MapPin className="w-4 h-4" /> الأنشطة (Activities)
                   </h4>
                   <div className="text-xs space-y-1">
-                    <p><strong>مطلوب:</strong> {ACTIVITIES_REQUIRED_HEADERS.join(', ')}</p>
-                    <p className="text-muted-foreground"><strong>اختياري:</strong> {ACTIVITIES_OPTIONAL_HEADERS.join(', ')}</p>
+                    <p><strong>مطلوب:</strong> destinationId (أو cityKey), nameAr (أو name_ar), type, category</p>
+                    <p className="text-muted-foreground"><strong>اختياري:</strong> budgetLevel, minTier, duration, cost</p>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -912,8 +761,8 @@ export default function AdminImport() {
                     <Hotel className="w-4 h-4" /> الإقامات (Accommodations)
                   </h4>
                   <div className="text-xs space-y-1">
-                    <p><strong>مطلوب:</strong> {ACCOMMODATIONS_REQUIRED_HEADERS.join(', ')}</p>
-                    <p className="text-muted-foreground"><strong>اختياري:</strong> {ACCOMMODATIONS_OPTIONAL_HEADERS.join(', ')}</p>
+                    <p><strong>مطلوب:</strong> destinationId (أو cityKey), nameAr (أو name_ar), class</p>
+                    <p className="text-muted-foreground"><strong>اختياري:</strong> priceRange, rating, googleMapsUrl</p>
                   </div>
                 </div>
               </div>
@@ -921,7 +770,7 @@ export default function AdminImport() {
           </AccordionItem>
         </Accordion>
 
-        <Tabs value={importMode} onValueChange={(v) => setImportMode(v as 'unified' | 'separate')}>
+        <Tabs value={importMode} onValueChange={(v: string) => setImportMode(v as 'unified' | 'separate')}>
           <TabsList className="grid w-full grid-cols-2 max-w-md">
             <TabsTrigger value="unified" className="gap-2">
               <FileArchive className="w-4 h-4" />
@@ -1022,27 +871,21 @@ export default function AdminImport() {
                 <Building2 className="w-5 h-5" />,
                 cities,
                 citiesInputRef,
-                'cities',
-                CITIES_REQUIRED_HEADERS,
-                CITIES_OPTIONAL_HEADERS
+                'cities'
               )}
               {renderDatasetUpload(
                 'الأنشطة',
                 <MapPin className="w-5 h-5" />,
                 activities,
                 activitiesInputRef,
-                'activities',
-                ACTIVITIES_REQUIRED_HEADERS,
-                ACTIVITIES_OPTIONAL_HEADERS
+                'activities'
               )}
               {renderDatasetUpload(
                 'الإقامات',
                 <Hotel className="w-5 h-5" />,
                 accommodations,
                 accommodationsInputRef,
-                'accommodations',
-                ACCOMMODATIONS_REQUIRED_HEADERS,
-                ACCOMMODATIONS_OPTIONAL_HEADERS
+                'accommodations'
               )}
             </div>
 

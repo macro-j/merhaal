@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { InsertUser, users } from "../drizzle/schema";
@@ -314,6 +314,22 @@ export async function deleteActivity(id: number) {
   await db.delete(activities).where(eq(activities.id, id));
 }
 
+export async function deleteActivitiesByDestination(destinationId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { activities } = await import('../drizzle/schema');
+  const result = await db.delete(activities).where(eq(activities.destinationId, destinationId));
+  return result.rowCount || 0;
+}
+
+export async function deleteActivitiesMany(ids: number[]) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { activities } = await import('../drizzle/schema');
+  const result = await db.delete(activities).where(inArray(activities.id, ids));
+  return result.rowCount || 0;
+}
+
 export async function getAllAccommodations() {
   const db = await getDb();
   if (!db) return [];
@@ -352,6 +368,22 @@ export async function deleteAccommodation(id: number) {
   if (!db) throw new Error('Database not available');
   const { accommodations } = await import('../drizzle/schema');
   await db.delete(accommodations).where(eq(accommodations.id, id));
+}
+
+export async function deleteAccommodationsByDestination(destinationId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { accommodations } = await import('../drizzle/schema');
+  const result = await db.delete(accommodations).where(eq(accommodations.destinationId, destinationId));
+  return result.rowCount || 0;
+}
+
+export async function deleteAccommodationsMany(ids: number[]) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { accommodations } = await import('../drizzle/schema');
+  const result = await db.delete(accommodations).where(inArray(accommodations.id, ids));
+  return result.rowCount || 0;
 }
 
 export async function getActivityById(id: number) {

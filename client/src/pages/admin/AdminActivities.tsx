@@ -52,6 +52,7 @@ export default function AdminActivities() {
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<ActivityForm>(emptyForm);
   const [filterCity, setFilterCity] = useState<string>('all');
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   const createMutation = trpc.admin.activities.create.useMutation({
     onSuccess: () => {
@@ -78,6 +79,24 @@ export default function AdminActivities() {
     onSuccess: () => {
       utils.admin.activities.list.invalidate();
       toast.success('تم حذف النشاط');
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  const deleteByDestinationMutation = trpc.admin.activities.deleteByDestination.useMutation({
+    onSuccess: (data: any) => {
+      utils.admin.activities.list.invalidate();
+      toast.success(`تم حذف ${data.count} نشاط`);
+      setSelectedIds(new Set());
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  const deleteManyMutation = trpc.admin.activities.deleteMany.useMutation({
+    onSuccess: (data: any) => {
+      utils.admin.activities.list.invalidate();
+      toast.success(`تم حذف ${data.count} نشاط`);
+      setSelectedIds(new Set());
     },
     onError: (error) => toast.error(error.message),
   });
@@ -115,6 +134,38 @@ export default function AdminActivities() {
     if (confirm('هل أنت متأكد من حذف هذا النشاط؟')) {
       deleteMutation.mutate({ id });
     }
+  };
+
+  const handleDeleteByDestination = () => {
+    if (filterCity === 'all') return;
+    if (confirm('سيتم حذف جميع أنشطة هذه المدينة. هل أنت متأكد؟')) {
+      deleteByDestinationMutation.mutate({ destinationId: parseInt(filterCity) });
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedIds.size === 0) return;
+    if (confirm(`حذف ${selectedIds.size} عنصر؟`)) {
+      deleteManyMutation.mutate({ ids: Array.from(selectedIds) });
+    }
+  };
+
+  const toggleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set(filteredActivities?.map(a => a.id) || []));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const toggleSelectId = (id: number, checked: boolean) => {
+    const newSelected = new Set(selectedIds);
+    if (checked) {
+      newSelected.add(id);
+    } else {
+      newSelected.delete(id);
+    }
+    setSelectedIds(newSelected);
   };
 
   const getCityName = (destinationId: number) => {
@@ -283,21 +334,47 @@ export default function AdminActivities() {
         </div>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader>
             <CardTitle>الأنشطة ({filteredActivities?.length || 0})</CardTitle>
-            <Select value={filterCity} onValueChange={setFilterCity}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="فلترة حسب المدينة" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">جميع المدن</SelectItem>
-                {cities?.map((city) => (
-                  <SelectItem key={city.id} value={city.id.toString()}>
-                    {city.nameAr}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <Select value={filterCity} onValueChange={setFilterCity}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="فلترة حسب المدينة" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع المدن</SelectItem>
+                  {cities?.map((city) => (
+                    <SelectItem key={city.id} value={city.id.toString()}>
+                      {city.nameAr}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                {selectedIds.size > 0 && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDeleteSelected}
+                    disabled={deleteManyMutation.isPending}
+                    className="w-full sm:w-auto"
+                  >
+                    حذف المحدد ({selectedIds.size})
+                  </Button>
+                )}
+                {filterCity !== 'all' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDeleteByDestination}
+                    disabled={deleteByDestinationMutation.isPending}
+                    className="w-full sm:w-auto text-red-600 hover:text-red-700"
+                  >
+                    حذف كل الأنشطة لهذه المدينة
+                  </Button>
+                )}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -309,6 +386,15 @@ export default function AdminActivities() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
+                      <th className="text-start p-3 font-medium w-10">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.size === filteredActivities?.length && filteredActivities?.length > 0}
+                          indeterminate={selectedIds.size > 0 && selectedIds.size < (filteredActivities?.length || 0)}
+                          onChange={(e) => toggleSelectAll(e.target.checked)}
+                          className="rounded border-gray-300"
+                        />
+                      </th>
                       <th className="text-start p-3 font-medium">الاسم</th>
                       <th className="text-start p-3 font-medium">المدينة</th>
                       <th className="text-start p-3 font-medium">النوع</th>
@@ -321,6 +407,14 @@ export default function AdminActivities() {
                   <tbody>
                     {filteredActivities?.map((activity) => (
                       <tr key={activity.id} className="border-b hover:bg-muted/50">
+                        <td className="p-3 w-10">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(activity.id)}
+                            onChange={(e) => toggleSelectId(activity.id, e.target.checked)}
+                            className="rounded border-gray-300"
+                          />
+                        </td>
                         <td className="p-3">{activity.name}</td>
                         <td className="p-3 text-muted-foreground">{getCityName(activity.destinationId)}</td>
                         <td className="p-3 text-sm">{activity.type}</td>

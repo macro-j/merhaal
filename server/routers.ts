@@ -140,6 +140,85 @@ function estimateCost(costText?: string, budgetLevel?: string): number {
   return budgetLevelDefaults[level] || 75;
 }
 
+/**
+ * Check if a time window is available (no overlap with existing activities)
+ * Returns true if the proposed time block does not overlap with any scheduled activity
+ */
+function isTimeWindowAvailable(
+  dayActivities: Array<any>,
+  windowStartMinutes: number,
+  windowEndMinutes: number
+): boolean {
+  return !dayActivities.some(act => {
+    const actStart = parseInt(act.startTime.split(':')[0]) * 60 + parseInt(act.startTime.split(':')[1]);
+    const actEnd = parseInt(act.endTime.split(':')[0]) * 60 + parseInt(act.endTime.split(':')[1]);
+    
+    // Check for overlap
+    return !(windowEndMinutes <= actStart || windowStartMinutes >= actEnd);
+  });
+}
+
+/**
+ * Find an available time slot within a meal window that doesn't overlap with existing activities
+ * Returns { startMinutes, endMinutes } or null if no slot available
+ */
+function findAvailableSlotInWindow(
+  dayActivities: Array<any>,
+  windowStartMinutes: number,
+  windowEndMinutes: number,
+  durationMinutes: number
+): { startMinutes: number; endMinutes: number } | null {
+  // Try the ideal window start time first
+  if (isTimeWindowAvailable(dayActivities, windowStartMinutes, windowStartMinutes + durationMinutes)) {
+    return { startMinutes: windowStartMinutes, endMinutes: windowStartMinutes + durationMinutes };
+  }
+
+  // Scan for available slots within the window (every 15 minutes)
+  for (let tryStart = windowStartMinutes; tryStart + durationMinutes <= windowEndMinutes; tryStart += 15) {
+    if (isTimeWindowAvailable(dayActivities, tryStart, tryStart + durationMinutes)) {
+      return { startMinutes: tryStart, endMinutes: tryStart + durationMinutes };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Find an affordable restaurant matching a meal type
+ * Prefers: type === 'restaurant' AND isActive
+ * Prefers: mealType matches target OR mealType === 'any'
+ */
+function findAffordableRestaurant(
+  candidates: Array<any>,
+  mealType: 'breakfast' | 'lunch' | 'dinner',
+  maxCost: number,
+  usedIds: Set<number>
+): any | null {
+  const restaurants = candidates.filter(
+    act => act.type === 'restaurant' && act.isActive && !usedIds.has(act.id)
+  );
+
+  // Prefer exact meal type match
+  let preferred = restaurants.filter(
+    r => r.mealType === mealType || r.mealType === 'any' || !r.mealType
+  );
+
+  // If too few, relax to all restaurants
+  if (preferred.length === 0) {
+    preferred = restaurants;
+  }
+
+  // Pick first affordable restaurant
+  for (const restaurant of preferred) {
+    const estimatedCost = estimateCost(restaurant.cost, restaurant.budgetLevel);
+    if (estimatedCost <= maxCost && estimatedCost > 0) {
+      return restaurant;
+    }
+  }
+
+  return null;
+}
+
 export const appRouter = router({
   system: systemRouter,
   
@@ -589,6 +668,21 @@ export const appRouter = router({
 
         const hadActivitiesBeforeBudgetFilter = filteredActivities.length > 0;
 
+        // DETECT LOW-BUDGET MODE: If accommodation leaves little for activities
+        // Calculate the minimum cost of a paid activity to detect low-budget threshold
+        let cheapestPaidActivityCost = Infinity;
+        for (const activity of filteredActivities) {
+          const cost = estimateCost(activity.cost, activity.budgetLevel || undefined);
+          if (cost > 0 && cost < cheapestPaidActivityCost) {
+            cheapestPaidActivityCost = cost;
+          }
+        }
+        // If no paid activities exist, use a reasonable default threshold (50 SAR)
+        if (cheapestPaidActivityCost === Infinity) {
+          cheapestPaidActivityCost = 50;
+        }
+        
+        const isLowBudgetAfterStay = remainingAfterAccommodation < cheapestPaidActivityCost;
 
         // Fallback: generate placeholder activities if DB is empty
         if (filteredActivities.length === 0 && !hadActivitiesBeforeBudgetFilter) {
@@ -642,8 +736,21 @@ export const appRouter = router({
         // Rebuild the scheduler pool after all modifications to filteredActivities (including placeholders)
         allShuffled = shuffleFn(filteredActivities);
         
-        // Pick next available activity
+        // Pick next available activity (respecting low-budget mode if active)
+        let currentDayIsLowBudget = false;
         const pickActivity = () => {
+          // If in low-budget mode for this day, only pick free activities
+          if (currentDayIsLowBudget) {
+            const freeActivity = allShuffled.find(a => {
+              if (usedActivityIds.has(a.id)) return false;
+              const cost = estimateCost(a.cost, a.budgetLevel);
+              return cost === 0; // Only free activities
+            });
+            if (freeActivity) usedActivityIds.add(freeActivity.id);
+            return freeActivity;
+          }
+          
+          // Normal mode: pick any available activity
           const activity = allShuffled.find(a => !usedActivityIds.has(a.id));
           if (activity) usedActivityIds.add(activity.id);
           return activity;
@@ -665,8 +772,9 @@ let remainingTripBudget = input.budget;
           let currentTimeMinutes = dayStartTime;
           let activitiesCount = 0;
           let remainingActivityBudget = Math.max(dailyBudget - accommodationCostPerNight, 0);
-          let unaffordableAttempts = 0;
-          const maxUnaffordableAttempts = 10;
+
+          // ACTIVATE LOW-BUDGET MODE FOR THIS DAY if needed
+          currentDayIsLowBudget = isLowBudgetAfterStay;
 
           // ZERO-BUDGET SAFETY: If accommodation exhausted budget, add 1-2 free activities directly
           if (remainingAfterAccommodation <= 0) {
@@ -749,8 +857,8 @@ let remainingTripBudget = input.budget;
             const activity = pickActivity();
             if (!activity) break;
 
-            // Check if activity cost exceeds remaining budget
-            let estimatedCost = estimateCost(activity.cost, activity.budgetLevel);
+            // Compute activity cost
+            let estimatedCost = estimateCost(activity.cost, activity.budgetLevel || undefined);
 
             // Apply smart fallback if estimatedCost is 0
             if (!estimatedCost || estimatedCost === 0) {
@@ -768,13 +876,9 @@ let remainingTripBudget = input.budget;
               estimatedCost = categoryFallback[category] || 40;
             }
 
-            // Budget constraint: skip if unaffordable
+            // BUDGET ENFORCEMENT: Skip if activity cost exceeds remaining budget
             if (estimatedCost > remainingActivityBudget) {
-              unaffordableAttempts++;
-              if (unaffordableAttempts >= maxUnaffordableAttempts) {
-                break; // Stop trying to add activities for this day
-              }
-              continue; // Try next activity
+              continue; // Try next activity instead of breaking early
             }
 
             // Parse activity duration
@@ -791,136 +895,218 @@ let remainingTripBudget = input.budget;
             const endTime = minutesToTime(endTimeMinutes);
             const period = derivePeriod(startTime);
 
-// =======================
-// 1) إضافة الأنشطة الأساسية
-// =======================
-dayActivities.push({
-  startTime,
-  endTime,
-  period,
-  activity: activity.name,
-  description: activity.details || `استمتع بـ${activity.name} في ${destination.nameAr}`,
-  type: activity.type,
-  category: activity.category,
-  duration: activity.duration || '2 ساعة',
-  cost: activity.cost,
-  budgetLevel: activity.budgetLevel,
-  estimatedCost,
-});
+            // Add activity to day
+            dayActivities.push({
+              startTime,
+              endTime,
+              period,
+              activity: activity.name,
+              description: activity.details || `استمتع بـ${activity.name} في ${destination.nameAr}`,
+              type: activity.type,
+              category: activity.category,
+              duration: activity.duration || '2 ساعة',
+              cost: activity.cost,
+              budgetLevel: activity.budgetLevel,
+              estimatedCost,
+            });
 
-// Deduct cost from remaining budget
-remainingActivityBudget = Math.max(remainingActivityBudget - estimatedCost, 0);
-currentTimeMinutes = endTimeMinutes + travelBufferMinutes;
-activitiesCount++;
-unaffordableAttempts = 0; // Reset counter after successful addition
-}
+            // Deduct cost from remaining budget
+            remainingActivityBudget = Math.max(remainingActivityBudget - estimatedCost, 0);
+            currentTimeMinutes = endTimeMinutes + travelBufferMinutes;
+            activitiesCount++;
+          }
 
-// =======================
-// 2) ضمان الحد الأدنى من الأنشطة
-// =======================
-let minActivitiesAttempts = 0;
-const maxMinActivitiesAttempts = 10;
+// Ensure minimum activities (respecting budget constraints)
 
-while (
-  dayActivities.length < minActivitiesPerDay &&
-  usedActivityIds.size < filteredActivities.length
-) {
-  const activity = pickActivity();
-  if (!activity) break;
+          while (
+            dayActivities.length < minActivitiesPerDay &&
+            usedActivityIds.size < filteredActivities.length
+          ) {
+            const activity = pickActivity();
+            if (!activity) break;
 
-  const durationMinutes = parseDurationToMinutes(activity.duration);
-  const startTimeMinutes = currentTimeMinutes;
-  const endTimeMinutes = startTimeMinutes + durationMinutes;
+            const durationMinutes = parseDurationToMinutes(activity.duration);
+            const startTimeMinutes = currentTimeMinutes;
+            const endTimeMinutes = startTimeMinutes + durationMinutes;
 
-  if (endTimeMinutes > dayEndTimeMinutes) break;
+            if (endTimeMinutes > dayEndTimeMinutes) break;
 
-  const startTime = minutesToTime(startTimeMinutes);
-  const endTime = minutesToTime(endTimeMinutes);
-  const period = derivePeriod(startTime);
-  let estimatedCost = estimateCost(activity.cost, activity.budgetLevel);
+            const startTime = minutesToTime(startTimeMinutes);
+            const endTime = minutesToTime(endTimeMinutes);
+            const period = derivePeriod(startTime);
+            
+            // Compute activity cost
+            let estimatedCost = estimateCost(activity.cost, activity.budgetLevel || undefined);
 
-  // Apply smart fallback if estimatedCost is 0
-  if (!estimatedCost || estimatedCost === 0) {
-    const categoryFallback: { [key: string]: number } = {
-      'مطاعم': 80,
-      'ترفيه': 60,
-      'تسوق': 100,
-      'ثقافة': 30,
-      'تراث': 20,
-      'طبيعة': 10,
-      'مغامرات': 120,
-      'عائلي': 50,
-    };
-    const category = activity.category || activity.type || '';
-    estimatedCost = categoryFallback[category] || 40;
-  }
+            // Apply smart fallback if estimatedCost is 0
+            if (!estimatedCost || estimatedCost === 0) {
+              const categoryFallback: { [key: string]: number } = {
+                'مطاعم': 80,
+                'ترفيه': 60,
+                'تسوق': 100,
+                'ثقافة': 30,
+                'تراث': 20,
+                'طبيعة': 10,
+                'مغامرات': 120,
+                'عائلي': 50,
+              };
+              const category = activity.category || activity.type || '';
+              estimatedCost = categoryFallback[category] || 40;
+            }
 
-  // Budget constraint: skip if unaffordable
-  if (estimatedCost > remainingActivityBudget) {
-    minActivitiesAttempts++;
-    if (minActivitiesAttempts >= maxMinActivitiesAttempts) {
-      break; // Stop trying to meet minimum
-    }
-    continue; // Try next activity
-  }
+            // BUDGET ENFORCEMENT: Skip if activity cost exceeds remaining budget
+            if (estimatedCost > remainingActivityBudget) {
+              continue; // Try next activity instead of breaking early
+            }
 
-  dayActivities.push({
-    startTime,
-    endTime,
-    period,
-    activity: activity.name,
-    description: activity.details || `استمتع بـ${activity.name} في ${destination.nameAr}`,
-    type: activity.type,
-    category: activity.category,
-    duration: activity.duration || '2 ساعة',
-    cost: activity.cost,
-    budgetLevel: activity.budgetLevel,
-    estimatedCost,
-  });
+            // Add activity to day
+            dayActivities.push({
+              startTime,
+              endTime,
+              period,
+              activity: activity.name,
+              description: activity.details || `استمتع بـ${activity.name} في ${destination.nameAr}`,
+              type: activity.type,
+              category: activity.category,
+              duration: activity.duration || '2 ساعة',
+              cost: activity.cost,
+              budgetLevel: activity.budgetLevel,
+              estimatedCost,
+            });
 
-  // Deduct cost from remaining budget
-  remainingActivityBudget = Math.max(remainingActivityBudget - estimatedCost, 0);
-  currentTimeMinutes = endTimeMinutes + travelBufferMinutes;
-  minActivitiesAttempts = 0; // Reset counter after successful addition
-}
+            // Deduct cost from remaining budget
+            remainingActivityBudget = Math.max(remainingActivityBudget - estimatedCost, 0);
+            currentTimeMinutes = endTimeMinutes + travelBufferMinutes;
+          }
 
-// =======================
-// 3) حساب ميزانية اليوم (مرة وحدة فقط)
-// =======================
-const dayTotalCost = dayActivities.reduce(
-  (sum, act) => sum + (act.estimatedCost || 0),
-  0
-);
+          // MEAL-AWARE RESTAURANT SCHEDULING
+          // If user selected food interest, try to inject lunch and dinner restaurants
+          // Skip restaurants if in low-budget mode (can't afford paid meals)
+          const hasFood = input.interests.some(interest =>
+            ['مطاعم', 'طعام', 'food'].includes(interest)
+          );
+          
+          if (hasFood && restaurants.length > 0 && !currentDayIsLowBudget) {
+            // Define meal windows (in minutes since midnight)
+            const mealWindows = {
+              lunch: { startMinutes: 12 * 60, endMinutes: 14 * 60, mealType: 'lunch' as const },
+              dinner: { startMinutes: 18 * 60, endMinutes: 21 * 60, mealType: 'dinner' as const },
+            };
 
-const remainingAfterActivities = Math.max(
-  dailyBudget - accommodationCostPerNight - dayTotalCost,
-  0
-);
-remainingTripBudget = Math.max(
-  remainingTripBudget - accommodationCostPerNight - dayTotalCost,
-  0
-);
+            // Typical restaurant duration
+            const restaurantDurationMinutes = 75; // 60-90 min average
 
+            // Try to inject lunch restaurant
+            const lunchSlot = findAvailableSlotInWindow(
+              dayActivities,
+              mealWindows.lunch.startMinutes,
+              mealWindows.lunch.endMinutes,
+              restaurantDurationMinutes
+            );
 
+            if (lunchSlot) {
+              const lunchRestaurant = findAffordableRestaurant(
+                restaurants,
+                'lunch',
+                remainingActivityBudget,
+                usedActivityIds
+              );
 
-// =======================
-// 4) إضافة اليوم للخطة
-// =======================
-plan.push({
-  day,
-  title: dayTitles[day - 1] || `اليوم ${day}`,
-  activities: dayActivities,
-  dayTotalCost,
-  dayBudgetSummary: {
-    dailyBudget,
-    accommodationCostPerNight,
-    remainingAfterAccommodation,
-    activitiesCost: dayTotalCost,
-    remainingAfterActivities,
-  },
-  remainingTripBudget, // 👈 جديد
-});
-} 
+              if (lunchRestaurant) {
+                const lunchCost = estimateCost(lunchRestaurant.cost, lunchRestaurant.budgetLevel);
+                
+                // Insert lunch restaurant
+                dayActivities.push({
+                  startTime: minutesToTime(lunchSlot.startMinutes),
+                  endTime: minutesToTime(lunchSlot.endMinutes),
+                  period: derivePeriod(minutesToTime(lunchSlot.startMinutes)),
+                  activity: lunchRestaurant.name || lunchRestaurant.nameAr || 'مطعم الغداء',
+                  description: lunchRestaurant.details || `استمتع بتناول الغداء في ${lunchRestaurant.name}`,
+                  type: lunchRestaurant.type,
+                  category: lunchRestaurant.category || 'مطاعم',
+                  duration: '1.25 ساعة',
+                  cost: lunchRestaurant.cost,
+                  budgetLevel: lunchRestaurant.budgetLevel,
+                  estimatedCost: lunchCost,
+                  mealType: 'lunch',
+                });
+
+                usedActivityIds.add(lunchRestaurant.id);
+                remainingActivityBudget = Math.max(remainingActivityBudget - lunchCost, 0);
+              }
+            }
+
+            // Try to inject dinner restaurant
+            const dinnerSlot = findAvailableSlotInWindow(
+              dayActivities,
+              mealWindows.dinner.startMinutes,
+              mealWindows.dinner.endMinutes,
+              restaurantDurationMinutes
+            );
+
+            if (dinnerSlot) {
+              const dinnerRestaurant = findAffordableRestaurant(
+                restaurants,
+                'dinner',
+                remainingActivityBudget,
+                usedActivityIds
+              );
+
+              if (dinnerRestaurant) {
+                const dinnerCost = estimateCost(dinnerRestaurant.cost, dinnerRestaurant.budgetLevel);
+                
+                // Insert dinner restaurant
+                dayActivities.push({
+                  startTime: minutesToTime(dinnerSlot.startMinutes),
+                  endTime: minutesToTime(dinnerSlot.endMinutes),
+                  period: derivePeriod(minutesToTime(dinnerSlot.startMinutes)),
+                  activity: dinnerRestaurant.name || dinnerRestaurant.nameAr || 'مطعم العشاء',
+                  description: dinnerRestaurant.details || `استمتع بتناول العشاء في ${dinnerRestaurant.name}`,
+                  type: dinnerRestaurant.type,
+                  category: dinnerRestaurant.category || 'مطاعم',
+                  duration: '1.25 ساعة',
+                  cost: dinnerRestaurant.cost,
+                  budgetLevel: dinnerRestaurant.budgetLevel,
+                  estimatedCost: dinnerCost,
+                  mealType: 'dinner',
+                });
+
+                usedActivityIds.add(dinnerRestaurant.id);
+                remainingActivityBudget = Math.max(remainingActivityBudget - dinnerCost, 0);
+              }
+            }
+
+            // Re-sort dayActivities by time to maintain chronological order
+            dayActivities.sort((a, b) => {
+              const aTime = parseInt(a.startTime.split(':')[0]) * 60 + parseInt(a.startTime.split(':')[1]);
+              const bTime = parseInt(b.startTime.split(':')[0]) * 60 + parseInt(b.startTime.split(':')[1]);
+              return aTime - bTime;
+            });
+          }
+
+          // Calculate daily budget summary based on actual scheduled activities
+          const activitiesCost = dayActivities.reduce((sum, act) => sum + (act.estimatedCost || 0), 0);
+          const remainingAfterActivitiesForDay = Math.max(dailyBudget - accommodationCostPerNight - activitiesCost, 0);
+          
+          // Update trip-level budget
+          remainingTripBudget = Math.max(remainingTripBudget - accommodationCostPerNight - activitiesCost, 0);
+
+          // Add day to plan
+          plan.push({
+            day,
+            title: dayTitles[day - 1] || `اليوم ${day}`,
+            activities: dayActivities,
+            dayTotalCost: accommodationCostPerNight + activitiesCost,
+            dayBudgetSummary: {
+              dailyBudget,
+              accommodationCostPerNight,
+              remainingAfterAccommodation,
+              activitiesCost,
+              remainingAfterActivities: remainingAfterActivitiesForDay,
+            },
+            remainingTripBudget,
+          });
+        } 
         
         // Build accommodation info for plan (accommodation already selected and budgets computed earlier)
         let accommodationInfo = null;
@@ -1351,6 +1537,42 @@ plan.push({
           await db.deleteActivity(input.id);
           return { success: true };
         }),
+
+      deleteByDestination: protectedProcedure
+        .input(z.object({ destinationId: z.number() }))
+        .mutation(async ({ ctx, input }) => {
+          const authHeader = ctx.req.headers.authorization;
+          if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+          
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+          const user = await db.getUserById(decoded.userId);
+          
+          if (!user || user.role !== 'admin') {
+            throw new TRPCError({ code: 'FORBIDDEN' });
+          }
+          
+          const count = await db.deleteActivitiesByDestination(input.destinationId);
+          return { count };
+        }),
+
+      deleteMany: protectedProcedure
+        .input(z.object({ ids: z.array(z.number()) }))
+        .mutation(async ({ ctx, input }) => {
+          const authHeader = ctx.req.headers.authorization;
+          if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+          
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+          const user = await db.getUserById(decoded.userId);
+          
+          if (!user || user.role !== 'admin') {
+            throw new TRPCError({ code: 'FORBIDDEN' });
+          }
+          
+          const count = await db.deleteActivitiesMany(input.ids);
+          return { count };
+        }),
     }),
 
     accommodations: router({
@@ -1446,6 +1668,42 @@ plan.push({
           await db.deleteAccommodation(input.id);
           return { success: true };
         }),
+
+      deleteByDestination: protectedProcedure
+        .input(z.object({ destinationId: z.number() }))
+        .mutation(async ({ ctx, input }) => {
+          const authHeader = ctx.req.headers.authorization;
+          if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+          
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+          const user = await db.getUserById(decoded.userId);
+          
+          if (!user || user.role !== 'admin') {
+            throw new TRPCError({ code: 'FORBIDDEN' });
+          }
+          
+          const count = await db.deleteAccommodationsByDestination(input.destinationId);
+          return { count };
+        }),
+
+      deleteMany: protectedProcedure
+        .input(z.object({ ids: z.array(z.number()) }))
+        .mutation(async ({ ctx, input }) => {
+          const authHeader = ctx.req.headers.authorization;
+          if (!authHeader) throw new TRPCError({ code: 'UNAUTHORIZED' });
+          
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+          const user = await db.getUserById(decoded.userId);
+          
+          if (!user || user.role !== 'admin') {
+            throw new TRPCError({ code: 'FORBIDDEN' });
+          }
+          
+          const count = await db.deleteAccommodationsMany(input.ids);
+          return { count };
+        }),
     }),
 
     support: router({
@@ -1503,44 +1761,9 @@ plan.push({
 
     bulkImport: protectedProcedure
       .input(z.object({
-        cities: z.array(z.object({
-          city_id: z.string(),
-          name_ar: z.string(),
-          name_en: z.string().optional(),
-          description_ar: z.string().optional(),
-          description_en: z.string().optional(),
-          image_url: z.string().optional(),
-          is_active: z.boolean().optional(),
-        })).optional(),
-        activities: z.array(z.object({
-          activity_id: z.string(),
-          city_id: z.string(),
-          name_ar: z.string(),
-          name_en: z.string().optional(),
-          description_ar: z.string().optional(),
-          category: z.string(),
-          tags: z.union([z.array(z.string()), z.string()]).optional(),
-          budget_level: z.string().optional(),
-          best_time: z.string().optional(),
-          duration_min: z.number().optional(),
-          is_indoor: z.boolean().optional(),
-          is_unique: z.boolean().optional(),
-          google_maps_url: z.string().optional(),
-          tier_required: z.string().optional(),
-          is_active: z.boolean().optional(),
-        })).optional(),
-        accommodations: z.array(z.object({
-          accommodation_id: z.string(),
-          city_id: z.string(),
-          name_ar: z.string(),
-          name_en: z.string().optional(),
-          class: z.string(),
-          price_range: z.string().optional(),
-          description_ar: z.string().optional(),
-          google_maps_url: z.string().optional(),
-          tier_required: z.string().optional(),
-          is_active: z.boolean().optional(),
-        })).optional(),
+        cities: z.array(z.record(z.string(), z.any())).optional(),
+        activities: z.array(z.record(z.string(), z.any())).optional(),
+        accommodations: z.array(z.record(z.string(), z.any())).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const authHeader = ctx.req.headers.authorization;
@@ -1554,94 +1777,321 @@ plan.push({
           throw new TRPCError({ code: 'FORBIDDEN' });
         }
 
-        const results: any = {};
+        // Helper: normalize header names
+        const normalizeHeader = (header: string): string => {
+          return header.trim().toLowerCase().replace(/[\s_-]/g, '');
+        };
 
-        if (input.cities && input.cities.length > 0) {
-          let upserted = 0;
-          for (const city of input.cities) {
-            const externalId = String(city.city_id).trim();
-            const cityData = {
-              nameAr: city.name_ar,
-              nameEn: city.name_en || city.name_ar,
-              slug: externalId.toLowerCase().replace(/\s+/g, '-'),
-              titleAr: city.name_ar,
-              titleEn: city.name_en || city.name_ar,
-              descriptionAr: city.description_ar || '',
-              descriptionEn: city.description_en || '',
-              images: city.image_url ? [city.image_url] : [],
-              isActive: city.is_active !== false,
-            };
-            await db.upsertDestinationByExternalId(externalId, cityData);
-            upserted++;
-          }
-          results.cities = { upserted };
-        }
-
-        if (input.activities && input.activities.length > 0) {
-          let upserted = 0;
-          const missingCities: string[] = [];
-          for (const activity of input.activities) {
-            const externalId = String(activity.activity_id).trim();
-            const cityExternalId = String(activity.city_id).trim();
-            const destination = await db.getDestinationByExternalId(cityExternalId);
-            if (!destination) {
-              if (!missingCities.includes(cityExternalId)) {
-                missingCities.push(cityExternalId);
+        // Helper: get field value by multiple possible header names
+        const getFieldValue = (row: any, possibleHeaders: string[]): any => {
+          for (const header of possibleHeaders) {
+            const normalized = normalizeHeader(header);
+            for (const [key, value] of Object.entries(row)) {
+              if (normalizeHeader(key) === normalized) {
+                return value;
               }
+            }
+          }
+          return undefined;
+        };
+
+        // Helper: normalize budgetLevel enum (free -> low)
+        const normalizeBudgetLevel = (value: any): string => {
+          if (!value) return 'medium';
+          const normalized = String(value).trim().toLowerCase();
+          if (normalized === 'free') return 'low';
+          if (['low', 'medium', 'high'].includes(normalized)) return normalized;
+          return 'medium'; // default on unknown
+        };
+
+        // Helper: normalize minTier enum
+        const normalizeMinTier = (value: any): string => {
+          if (!value) return 'free';
+          const normalized = String(value).trim().toLowerCase();
+          if (['free', 'smart', 'professional'].includes(normalized)) return normalized;
+          return 'free'; // default on unknown
+        };
+
+        // Helper: normalize bestTimeOfDay enum
+        const normalizeBestTimeOfDay = (value: any): string => {
+          if (!value) return '';
+          const normalized = String(value).trim().toLowerCase();
+          if (['morning', 'afternoon', 'evening', 'anytime'].includes(normalized)) return normalized;
+          return ''; // default on unknown
+        };
+
+        // Helper: normalize accommodation class enum
+        const normalizeAccommodationClass = (value: any): string => {
+          if (!value) return 'mid';
+          const normalized = String(value).trim().toLowerCase();
+          if (['economy', 'mid', 'luxury'].includes(normalized)) return normalized;
+          return 'mid'; // default on unknown
+        };
+
+        // Normalize city rows
+        const normalizeCities = (cities: any[]): any[] => {
+          return cities.map(city => ({
+            cityKey: getFieldValue(city, ['city_id', 'cityKey', 'id']) || '',
+            nameAr: getFieldValue(city, ['name_ar', 'nameAr']) || '',
+            nameEn: getFieldValue(city, ['name_en', 'nameEn']) || '',
+            descriptionAr: getFieldValue(city, ['description_ar', 'descriptionAr']) || '',
+            descriptionEn: getFieldValue(city, ['description_en', 'descriptionEn']) || '',
+            image: getFieldValue(city, ['image', 'image_url']) || '',
+            region: getFieldValue(city, ['region']) || '',
+            isActive: getFieldValue(city, ['is_active', 'isActive']) !== false,
+          }));
+        };
+
+        // Normalize activity rows
+        const normalizeActivities = (activities: any[]): any[] => {
+          return activities.map(activity => ({
+            activityKey: getFieldValue(activity, ['activity_id', 'id']) || '',
+            destinationKey: getFieldValue(activity, ['city_id', 'destinationId']) || '',
+            nameAr: getFieldValue(activity, ['name_ar', 'nameAr', 'name']) || '',
+            nameEn: getFieldValue(activity, ['name_en', 'nameEn']) || '',
+            type: getFieldValue(activity, ['type']) || '',
+            category: getFieldValue(activity, ['category']) || '',
+            budgetLevel: normalizeBudgetLevel(getFieldValue(activity, ['budget_level', 'budgetLevel'])),
+            bestTimeOfDay: normalizeBestTimeOfDay(getFieldValue(activity, ['best_time_of_day', 'bestTimeOfDay', 'best_time'])),
+            minTier: normalizeMinTier(getFieldValue(activity, ['min_tier', 'minTier'])),
+            cost: getFieldValue(activity, ['cost', 'estimatedCost', 'avgCostPerPerson']) || '',
+            duration: getFieldValue(activity, ['duration', 'durationMin']) || '',
+            details: getFieldValue(activity, ['details', 'costNote']) || '',
+            googleMapsUrl: getFieldValue(activity, ['google_maps_url', 'googleMapsUrl']) || '',
+            isActive: getFieldValue(activity, ['is_active', 'isActive']) !== false,
+            originalBudgetLevel: String(getFieldValue(activity, ['budget_level', 'budgetLevel']) || '').trim().toLowerCase(),
+          }));
+        };
+
+        // Normalize accommodation rows
+        const normalizeAccommodations = (accommodations: any[]): any[] => {
+          return accommodations.map(acc => ({
+            accommodationKey: getFieldValue(acc, ['accommodation_id', 'id']) || '',
+            destinationKey: getFieldValue(acc, ['city_id', 'destinationId']) || '',
+            nameAr: getFieldValue(acc, ['name_ar', 'nameAr']) || '',
+            nameEn: getFieldValue(acc, ['name_en', 'nameEn']) || '',
+            class: normalizeAccommodationClass(getFieldValue(acc, ['class'])),
+            priceRange: getFieldValue(acc, ['price_range', 'priceRange', 'pricePerNight']) || '',
+            descriptionAr: getFieldValue(acc, ['description_ar', 'descriptionAr']) || '',
+            descriptionEn: getFieldValue(acc, ['description_en', 'descriptionEn']) || '',
+            googleMapsUrl: getFieldValue(acc, ['google_maps_url', 'googleMapsUrl']) || '',
+            rating: getFieldValue(acc, ['rating']) || '',
+            isActive: getFieldValue(acc, ['is_active', 'isActive']) !== false,
+          }));
+        };
+
+        const results: any = {};
+        const cityKeyToDatabaseId: { [key: string]: number } = {};
+
+        // Process Cities
+        if (input.cities && input.cities.length > 0) {
+          const normalizedCities = normalizeCities(input.cities);
+          const errors: string[] = [];
+          let upserted = 0;
+
+          for (let idx = 0; idx < normalizedCities.length; idx++) {
+            const city = normalizedCities[idx];
+            if (!city.cityKey) {
+              errors.push(`Row ${idx + 2}: مطلوب: cityKey (city_id OR cityKey OR id)`);
               continue;
             }
-            const tags = Array.isArray(activity.tags) ? activity.tags : 
-                        (typeof activity.tags === 'string' ? activity.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : []);
+            if (!city.nameAr) {
+              errors.push(`Row ${idx + 2}: مطلوب: nameAr (name_ar OR nameAr)`);
+              continue;
+            }
+
+            const externalId = String(city.cityKey).trim();
+            const cityData = {
+              nameAr: city.nameAr,
+              nameEn: city.nameEn || city.nameAr,
+              slug: externalId.toLowerCase().replace(/\s+/g, '-'),
+              titleAr: city.nameAr,
+              titleEn: city.nameEn || city.nameAr,
+              descriptionAr: city.descriptionAr || '',
+              descriptionEn: city.descriptionEn || '',
+              images: city.image ? [city.image] : [],
+              isActive: city.isActive,
+            };
+
+            const result = await db.upsertDestinationByExternalId(externalId, cityData);
+            cityKeyToDatabaseId[externalId] = result.id;
+            upserted++;
+          }
+
+          results.cities = { upserted, errors: errors.length > 0 ? errors : undefined };
+        }
+
+        // Process Activities
+        if (input.activities && input.activities.length > 0) {
+          const normalizedActivities = normalizeActivities(input.activities);
+          const errors: string[] = [];
+          let upserted = 0;
+          const missingDestinations: string[] = [];
+
+          for (let idx = 0; idx < normalizedActivities.length; idx++) {
+            const activity = normalizedActivities[idx];
+
+            // Validate required fields
+            if (!activity.destinationKey) {
+              errors.push(`Row ${idx + 2}: مطلوب: destinationKey (city_id OR destinationId)`);
+              continue;
+            }
+            if (!activity.nameAr) {
+              errors.push(`Row ${idx + 2}: مطلوب: nameAr (name_ar OR nameAr OR name)`);
+              continue;
+            }
+            if (!activity.type) {
+              errors.push(`Row ${idx + 2}: مطلوب: type`);
+              continue;
+            }
+
+            // Resolve destination
+            let destinationId: number | null = null;
+
+            // First check if we have a city key mapping from import
+            const destKeyStr = String(activity.destinationKey).trim();
+            if (cityKeyToDatabaseId[destKeyStr]) {
+              destinationId = cityKeyToDatabaseId[destKeyStr];
+            } else {
+              // Try to find by external ID in DB
+              const destination = await db.getDestinationByExternalId(destKeyStr);
+              if (destination) {
+                destinationId = destination.id;
+              } else {
+                // Try numeric lookup if it's a number
+                if (!isNaN(Number(destKeyStr))) {
+                  const numDestId = Number(destKeyStr);
+                  try {
+                    const destById = await db.getDestinationById(numDestId);
+                    if (destById) destinationId = numDestId;
+                  } catch (_e) {
+                    // Destination not found
+                  }
+                }
+              }
+            }
+
+            if (!destinationId) {
+              if (!missingDestinations.includes(destKeyStr)) {
+                missingDestinations.push(destKeyStr);
+              }
+              errors.push(`Row ${idx + 2}: destinationId/city_id "${destKeyStr}" not found in Cities sheet or database`);
+              continue;
+            }
+
+            const activityKey = activity.activityKey || `activity_${Date.now()}_${idx}`;
+            const tags = activity.category ? [activity.category] : [];
+
+            // Handle "free" budgetLevel -> cost = 0
+            let cost: string;
+            if (activity.originalBudgetLevel === 'free') {
+              cost = '0';
+            } else if (activity.cost) {
+              cost = String(activity.cost);
+            } else {
+              cost = '0';
+            }
+
             const activityData = {
-              destinationId: destination.id,
-              name: activity.name_ar,
-              nameEn: activity.name_en,
-              type: activity.category,
+              destinationId,
+              name: activity.nameAr,
+              nameEn: activity.nameEn,
+              type: activity.type || activity.category,
               category: activity.category as any,
               tags,
-              details: activity.description_ar,
+              details: activity.details,
               detailsEn: '',
-              duration: activity.duration_min ? `${activity.duration_min} دقيقة` : undefined,
-              budgetLevel: activity.budget_level as any,
-              bestTimeOfDay: activity.best_time as any,
-              minTier: (activity.tier_required || 'free') as any,
-              isActive: activity.is_active !== false,
-              googleMapsUrl: activity.google_maps_url,
+              duration: activity.duration ? String(activity.duration) : undefined,
+              cost,
+              budgetLevel: activity.budgetLevel as any,
+              bestTimeOfDay: activity.bestTimeOfDay as any,
+              minTier: activity.minTier as any,
+              isActive: activity.isActive,
+              googleMapsUrl: activity.googleMapsUrl,
             };
-            await db.upsertActivityByExternalId(externalId, activityData);
+
+            await db.upsertActivityByExternalId(String(activityKey), activityData);
             upserted++;
           }
-          results.activities = { upserted, missingCities };
+
+          results.activities = { upserted, errors: errors.length > 0 ? errors : undefined, missingDestinations: missingDestinations.length > 0 ? missingDestinations : undefined };
         }
 
+        // Process Accommodations
         if (input.accommodations && input.accommodations.length > 0) {
+          const normalizedAccommodations = normalizeAccommodations(input.accommodations);
+          const errors: string[] = [];
           let upserted = 0;
-          const missingCities: string[] = [];
-          for (const acc of input.accommodations) {
-            const externalId = String(acc.accommodation_id).trim();
-            const cityExternalId = String(acc.city_id).trim();
-            const destination = await db.getDestinationByExternalId(cityExternalId);
-            if (!destination) {
-              if (!missingCities.includes(cityExternalId)) {
-                missingCities.push(cityExternalId);
-              }
+          const missingDestinations: string[] = [];
+
+          for (let idx = 0; idx < normalizedAccommodations.length; idx++) {
+            const acc = normalizedAccommodations[idx];
+
+            // Validate required fields
+            if (!acc.destinationKey) {
+              errors.push(`Row ${idx + 2}: مطلوب: destinationKey (city_id OR destinationId)`);
               continue;
             }
+            if (!acc.nameAr) {
+              errors.push(`Row ${idx + 2}: مطلوب: nameAr (name_ar OR nameAr)`);
+              continue;
+            }
+            if (!acc.class) {
+              errors.push(`Row ${idx + 2}: مطلوب: class`);
+              continue;
+            }
+
+            // Resolve destination
+            let destinationId: number | null = null;
+
+            const destKeyStr = String(acc.destinationKey).trim();
+            if (cityKeyToDatabaseId[destKeyStr]) {
+              destinationId = cityKeyToDatabaseId[destKeyStr];
+            } else {
+              const destination = await db.getDestinationByExternalId(destKeyStr);
+              if (destination) {
+                destinationId = destination.id;
+              } else {
+                if (!isNaN(Number(destKeyStr))) {
+                  const numDestId = Number(destKeyStr);
+                  try {
+                    const destById = await db.getDestinationById(numDestId);
+                    if (destById) destinationId = numDestId;
+                  } catch (_e) {
+                    // Destination not found
+                  }
+                }
+              }
+            }
+
+            if (!destinationId) {
+              if (!missingDestinations.includes(destKeyStr)) {
+                missingDestinations.push(destKeyStr);
+              }
+              errors.push(`Row ${idx + 2}: destinationId/city_id "${destKeyStr}" not found in Cities sheet or database`);
+              continue;
+            }
+
+            const accKey = acc.accommodationKey || `accommodation_${Date.now()}_${idx}`;
+
             const accData = {
-              destinationId: destination.id,
-              nameAr: acc.name_ar,
-              nameEn: acc.name_en,
-              descriptionAr: acc.description_ar,
-              descriptionEn: '',
+              destinationId,
+              nameAr: acc.nameAr,
+              nameEn: acc.nameEn,
+              descriptionAr: acc.descriptionAr,
+              descriptionEn: acc.descriptionEn || '',
               class: (acc.class || 'mid') as any,
-              priceRange: acc.price_range,
-              googleMapsUrl: acc.google_maps_url,
-              isActive: acc.is_active !== false,
+              priceRange: acc.priceRange,
+              rating: acc.rating ? parseInt(String(acc.rating), 10) : undefined,
+              googleMapsUrl: acc.googleMapsUrl,
+              isActive: acc.isActive,
             };
-            await db.upsertAccommodationByExternalId(externalId, accData);
+
+            await db.upsertAccommodationByExternalId(String(accKey), accData);
             upserted++;
           }
-          results.accommodations = { upserted, missingCities };
+
+          results.accommodations = { upserted, errors: errors.length > 0 ? errors : undefined, missingDestinations: missingDestinations.length > 0 ? missingDestinations : undefined };
         }
 
         return results;
