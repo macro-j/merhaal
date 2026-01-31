@@ -672,7 +672,7 @@ export const appRouter = router({
         // Calculate the minimum cost of a paid activity to detect low-budget threshold
         let cheapestPaidActivityCost = Infinity;
         for (const activity of filteredActivities) {
-          const cost = estimateCost(activity.cost, activity.budgetLevel || undefined);
+          const cost = estimateCost(activity.cost || undefined, activity.budgetLevel || undefined);
           if (cost > 0 && cost < cheapestPaidActivityCost) {
             cheapestPaidActivityCost = cost;
           }
@@ -767,11 +767,19 @@ let remainingTripBudget = input.budget;
         const baseActivitiesPerDay = Math.floor(totalActivitiesCount / input.days);
         let extraActivitiesDays = totalActivitiesCount % input.days;
         
+        // Check if user selected food interest (used for meal scheduling)
+        const hasFood = input.interests.some(interest =>
+          ['مطاعم', 'طعام', 'food'].includes(interest)
+        );
+        
         for (let day = 1; day <= input.days; day++) {
-          const dayActivities = [];
+          const dayActivities: Array<any> = [];
           let currentTimeMinutes = dayStartTime;
           let activitiesCount = 0;
           let remainingActivityBudget = Math.max(dailyBudget - accommodationCostPerNight, 0);
+
+          // MEAL SLOT TRACKING: Track which meal slots have been filled for this day
+          const filledMealSlots = new Set<'breakfast' | 'lunch' | 'dinner'>();
 
           // ACTIVATE LOW-BUDGET MODE FOR THIS DAY if needed
           currentDayIsLowBudget = isLowBudgetAfterStay;
@@ -852,6 +860,79 @@ let remainingTripBudget = input.budget;
             extraActivitiesDays--;
           }
           targetActivitiesCount = Math.min(maxActivitiesPerDay, targetActivitiesCount);
+
+          // MEAL-FIRST PRIORITY: Try to add ONE meal restaurant before regular activities
+          // This ensures days with limited budget still get meaningful meals
+          if (hasFood && restaurants.length > 0 && !currentDayIsLowBudget) {
+            // Define available meal slots for this day (in priority order)
+            const availableMealSlots: Array<'breakfast' | 'lunch' | 'dinner'> = [];
+            if (!filledMealSlots.has('breakfast')) availableMealSlots.push('breakfast');
+            if (!filledMealSlots.has('lunch')) availableMealSlots.push('lunch');
+            if (!filledMealSlots.has('dinner')) availableMealSlots.push('dinner');
+
+            // Try each available meal slot (prefer lunch, then dinner, then breakfast)
+            const prioritizedSlots = availableMealSlots.sort((a, b) => {
+              const order = { lunch: 0, dinner: 1, breakfast: 2 };
+              return (order[a] || 3) - (order[b] || 3);
+            });
+
+            for (const mealType of prioritizedSlots) {
+              // Define meal window for this slot
+              const mealWindows: Record<'breakfast' | 'lunch' | 'dinner', { startMinutes: number; endMinutes: number }> = {
+                breakfast: { startMinutes: 8 * 60, endMinutes: 10 * 60 },
+                lunch: { startMinutes: 12 * 60, endMinutes: 14 * 60 },
+                dinner: { startMinutes: 18 * 60, endMinutes: 21 * 60 },
+              };
+
+              const window = mealWindows[mealType];
+              const restaurantDurationMinutes = 75;
+
+              // Check if there's an available time slot
+              const mealSlot = findAvailableSlotInWindow(
+                dayActivities,
+                window.startMinutes,
+                window.endMinutes,
+                restaurantDurationMinutes
+              );
+
+              if (mealSlot) {
+                // Find an affordable restaurant for this meal type
+                const mealRestaurant = findAffordableRestaurant(
+                  restaurants,
+                  mealType,
+                  remainingActivityBudget,
+                  usedActivityIds
+                );
+
+                if (mealRestaurant) {
+                  const mealCost = estimateCost(mealRestaurant.cost || undefined, mealRestaurant.budgetLevel || undefined);
+                  
+                  // Add meal restaurant to day
+                  dayActivities.push({
+                    startTime: minutesToTime(mealSlot.startMinutes),
+                    endTime: minutesToTime(mealSlot.endMinutes),
+                    period: derivePeriod(minutesToTime(mealSlot.startMinutes)),
+                    activity: mealRestaurant.name || mealRestaurant.nameAr || `مطعم ${mealType}`,
+                    description: mealRestaurant.details || `استمتع بتناول الوجبة في ${mealRestaurant.name}`,
+                    type: mealRestaurant.type,
+                    category: mealRestaurant.category || 'مطاعم',
+                    duration: '1.25 ساعة',
+                    cost: mealRestaurant.cost,
+                    budgetLevel: mealRestaurant.budgetLevel,
+                    estimatedCost: mealCost,
+                    mealType,
+                  });
+
+                  usedActivityIds.add(mealRestaurant.id);
+                  remainingActivityBudget = Math.max(remainingActivityBudget - mealCost, 0);
+                  filledMealSlots.add(mealType);
+                  
+                  // We've added one meal, now proceed to regular activities
+                  break;
+                }
+              }
+            }
+          }
 
           while (activitiesCount < targetActivitiesCount && usedActivityIds.size < filteredActivities.length) {
             const activity = pickActivity();
@@ -979,16 +1060,13 @@ let remainingTripBudget = input.budget;
             currentTimeMinutes = endTimeMinutes + travelBufferMinutes;
           }
 
-          // MEAL-AWARE RESTAURANT SCHEDULING
-          // If user selected food interest, try to inject lunch and dinner restaurants
+          // MEAL-AWARE RESTAURANT SCHEDULING WITH MEAL SLOT LOGIC
+          // Try to inject remaining meal restaurants if budget and slots allow
           // Skip restaurants if in low-budget mode (can't afford paid meals)
-          const hasFood = input.interests.some(interest =>
-            ['مطاعم', 'طعام', 'food'].includes(interest)
-          );
-          
           if (hasFood && restaurants.length > 0 && !currentDayIsLowBudget) {
             // Define meal windows (in minutes since midnight)
             const mealWindows = {
+              breakfast: { startMinutes: 8 * 60, endMinutes: 10 * 60, mealType: 'breakfast' as const },
               lunch: { startMinutes: 12 * 60, endMinutes: 14 * 60, mealType: 'lunch' as const },
               dinner: { startMinutes: 18 * 60, endMinutes: 21 * 60, mealType: 'dinner' as const },
             };
@@ -996,83 +1074,132 @@ let remainingTripBudget = input.budget;
             // Typical restaurant duration
             const restaurantDurationMinutes = 75; // 60-90 min average
 
-            // Try to inject lunch restaurant
-            const lunchSlot = findAvailableSlotInWindow(
-              dayActivities,
-              mealWindows.lunch.startMinutes,
-              mealWindows.lunch.endMinutes,
-              restaurantDurationMinutes
-            );
-
-            if (lunchSlot) {
-              const lunchRestaurant = findAffordableRestaurant(
-                restaurants,
-                'lunch',
-                remainingActivityBudget,
-                usedActivityIds
+            // Try to inject breakfast restaurant (if slot available)
+            if (!filledMealSlots.has('breakfast')) {
+              const breakfastSlot = findAvailableSlotInWindow(
+                dayActivities,
+                mealWindows.breakfast.startMinutes,
+                mealWindows.breakfast.endMinutes,
+                restaurantDurationMinutes
               );
 
-              if (lunchRestaurant) {
-                const lunchCost = estimateCost(lunchRestaurant.cost, lunchRestaurant.budgetLevel);
-                
-                // Insert lunch restaurant
-                dayActivities.push({
-                  startTime: minutesToTime(lunchSlot.startMinutes),
-                  endTime: minutesToTime(lunchSlot.endMinutes),
-                  period: derivePeriod(minutesToTime(lunchSlot.startMinutes)),
-                  activity: lunchRestaurant.name || lunchRestaurant.nameAr || 'مطعم الغداء',
-                  description: lunchRestaurant.details || `استمتع بتناول الغداء في ${lunchRestaurant.name}`,
-                  type: lunchRestaurant.type,
-                  category: lunchRestaurant.category || 'مطاعم',
-                  duration: '1.25 ساعة',
-                  cost: lunchRestaurant.cost,
-                  budgetLevel: lunchRestaurant.budgetLevel,
-                  estimatedCost: lunchCost,
-                  mealType: 'lunch',
-                });
+              if (breakfastSlot) {
+                const breakfastRestaurant = findAffordableRestaurant(
+                  restaurants,
+                  'breakfast',
+                  remainingActivityBudget,
+                  usedActivityIds
+                );
 
-                usedActivityIds.add(lunchRestaurant.id);
-                remainingActivityBudget = Math.max(remainingActivityBudget - lunchCost, 0);
+                if (breakfastRestaurant) {
+                  const breakfastCost = estimateCost(breakfastRestaurant.cost || undefined, breakfastRestaurant.budgetLevel || undefined);
+                  
+                  // Insert breakfast restaurant
+                  dayActivities.push({
+                    startTime: minutesToTime(breakfastSlot.startMinutes),
+                    endTime: minutesToTime(breakfastSlot.endMinutes),
+                    period: derivePeriod(minutesToTime(breakfastSlot.startMinutes)),
+                    activity: breakfastRestaurant.name || breakfastRestaurant.nameAr || 'مطعم الإفطار',
+                    description: breakfastRestaurant.details || `استمتع بتناول الإفطار في ${breakfastRestaurant.name}`,
+                    type: breakfastRestaurant.type,
+                    category: breakfastRestaurant.category || 'مطاعم',
+                    duration: '1.25 ساعة',
+                    cost: breakfastRestaurant.cost,
+                    budgetLevel: breakfastRestaurant.budgetLevel,
+                    estimatedCost: breakfastCost,
+                    mealType: 'breakfast',
+                  });
+
+                  usedActivityIds.add(breakfastRestaurant.id);
+                  remainingActivityBudget = Math.max(remainingActivityBudget - breakfastCost, 0);
+                  filledMealSlots.add('breakfast');
+                }
               }
             }
 
-            // Try to inject dinner restaurant
-            const dinnerSlot = findAvailableSlotInWindow(
-              dayActivities,
-              mealWindows.dinner.startMinutes,
-              mealWindows.dinner.endMinutes,
-              restaurantDurationMinutes
-            );
-
-            if (dinnerSlot) {
-              const dinnerRestaurant = findAffordableRestaurant(
-                restaurants,
-                'dinner',
-                remainingActivityBudget,
-                usedActivityIds
+            // Try to inject lunch restaurant (if slot available)
+            if (!filledMealSlots.has('lunch')) {
+              const lunchSlot = findAvailableSlotInWindow(
+                dayActivities,
+                mealWindows.lunch.startMinutes,
+                mealWindows.lunch.endMinutes,
+                restaurantDurationMinutes
               );
 
-              if (dinnerRestaurant) {
-                const dinnerCost = estimateCost(dinnerRestaurant.cost, dinnerRestaurant.budgetLevel);
-                
-                // Insert dinner restaurant
-                dayActivities.push({
-                  startTime: minutesToTime(dinnerSlot.startMinutes),
-                  endTime: minutesToTime(dinnerSlot.endMinutes),
-                  period: derivePeriod(minutesToTime(dinnerSlot.startMinutes)),
-                  activity: dinnerRestaurant.name || dinnerRestaurant.nameAr || 'مطعم العشاء',
-                  description: dinnerRestaurant.details || `استمتع بتناول العشاء في ${dinnerRestaurant.name}`,
-                  type: dinnerRestaurant.type,
-                  category: dinnerRestaurant.category || 'مطاعم',
-                  duration: '1.25 ساعة',
-                  cost: dinnerRestaurant.cost,
-                  budgetLevel: dinnerRestaurant.budgetLevel,
-                  estimatedCost: dinnerCost,
-                  mealType: 'dinner',
-                });
+              if (lunchSlot) {
+                const lunchRestaurant = findAffordableRestaurant(
+                  restaurants,
+                  'lunch',
+                  remainingActivityBudget,
+                  usedActivityIds
+                );
 
-                usedActivityIds.add(dinnerRestaurant.id);
-                remainingActivityBudget = Math.max(remainingActivityBudget - dinnerCost, 0);
+                if (lunchRestaurant) {
+                  const lunchCost = estimateCost(lunchRestaurant.cost || undefined, lunchRestaurant.budgetLevel || undefined);
+                  
+                  // Insert lunch restaurant
+                  dayActivities.push({
+                    startTime: minutesToTime(lunchSlot.startMinutes),
+                    endTime: minutesToTime(lunchSlot.endMinutes),
+                    period: derivePeriod(minutesToTime(lunchSlot.startMinutes)),
+                    activity: lunchRestaurant.name || lunchRestaurant.nameAr || 'مطعم الغداء',
+                    description: lunchRestaurant.details || `استمتع بتناول الغداء في ${lunchRestaurant.name}`,
+                    type: lunchRestaurant.type,
+                    category: lunchRestaurant.category || 'مطاعم',
+                    duration: '1.25 ساعة',
+                    cost: lunchRestaurant.cost,
+                    budgetLevel: lunchRestaurant.budgetLevel,
+                    estimatedCost: lunchCost,
+                    mealType: 'lunch',
+                  });
+
+                  usedActivityIds.add(lunchRestaurant.id);
+                  remainingActivityBudget = Math.max(remainingActivityBudget - lunchCost, 0);
+                  filledMealSlots.add('lunch');
+                }
+              }
+            }
+
+            // Try to inject dinner restaurant (if slot available)
+            if (!filledMealSlots.has('dinner')) {
+              const dinnerSlot = findAvailableSlotInWindow(
+                dayActivities,
+                mealWindows.dinner.startMinutes,
+                mealWindows.dinner.endMinutes,
+                restaurantDurationMinutes
+              );
+
+              if (dinnerSlot) {
+                const dinnerRestaurant = findAffordableRestaurant(
+                  restaurants,
+                  'dinner',
+                  remainingActivityBudget,
+                  usedActivityIds
+                );
+
+                if (dinnerRestaurant) {
+                  const dinnerCost = estimateCost(dinnerRestaurant.cost || undefined, dinnerRestaurant.budgetLevel || undefined);
+                  
+                  // Insert dinner restaurant
+                  dayActivities.push({
+                    startTime: minutesToTime(dinnerSlot.startMinutes),
+                    endTime: minutesToTime(dinnerSlot.endMinutes),
+                    period: derivePeriod(minutesToTime(dinnerSlot.startMinutes)),
+                    activity: dinnerRestaurant.name || dinnerRestaurant.nameAr || 'مطعم العشاء',
+                    description: dinnerRestaurant.details || `استمتع بتناول العشاء في ${dinnerRestaurant.name}`,
+                    type: dinnerRestaurant.type,
+                    category: dinnerRestaurant.category || 'مطاعم',
+                    duration: '1.25 ساعة',
+                    cost: dinnerRestaurant.cost,
+                    budgetLevel: dinnerRestaurant.budgetLevel,
+                    estimatedCost: dinnerCost,
+                    mealType: 'dinner',
+                  });
+
+                  usedActivityIds.add(dinnerRestaurant.id);
+                  remainingActivityBudget = Math.max(remainingActivityBudget - dinnerCost, 0);
+                  filledMealSlots.add('dinner');
+                }
               }
             }
 
